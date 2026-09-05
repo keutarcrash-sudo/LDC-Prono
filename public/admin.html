@@ -50,7 +50,7 @@
   <div id="soireesList"></div>
 
   <script>
-    const { SUPABASE_URL, SUPABASE_ANON_KEY, FOOTBALL_DATA_API_KEY, COMPETITION_CODE, SITE_BASE_URL } = window.APP_CONFIG;
+    const { SUPABASE_URL, SUPABASE_ANON_KEY, SITE_BASE_URL } = window.APP_CONFIG;
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     function randomCode() {
@@ -65,10 +65,11 @@
     }
 
     async function fetchMatchesForDate(dateStr) {
-      const url = `https://api.football-data.org/v4/competitions/${COMPETITION_CODE}/matches?dateFrom=${dateStr}&dateTo=${dateStr}`;
-      const res = await fetch(url, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
-      if (!res.ok) throw new Error(`Erreur API football-data.org (${res.status})`);
+      // Passe par la fonction serveur /api/matches (voir api/matches.js) :
+      // l'API football-data.org bloque les appels directs depuis un navigateur.
+      const res = await fetch(`/api/matches?date=${dateStr}`);
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Erreur API football-data.org (${res.status})`);
       return data.matches || [];
     }
 

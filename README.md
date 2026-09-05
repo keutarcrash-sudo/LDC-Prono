@@ -19,6 +19,10 @@ ex: une bière) + classement cumulé de la saison (lot final).
   ci-dessous. Ne pas l'éditer ni le committer (il est dans `.gitignore`).
 - `config.example.js` — juste une référence pour voir à quoi ressemble le
   fichier généré, ne sert à rien en pratique.
+- `api/matches.js` — petite fonction serveur Vercel qui relaie les appels à
+  football-data.org (l'API refuse les appels directs depuis un navigateur).
+  La clé `FOOTBALL_DATA_API_KEY` reste uniquement là, jamais envoyée au
+  navigateur.
 
 ## Mise en place (une seule fois)
 
@@ -103,11 +107,8 @@ Vercel redéploiera automatiquement.
   distance pour cette V1.
 - **`admin.html` n'a pas de mot de passe non plus** : traite son lien comme
   une info interne, ne le partage pas publiquement.
-- La clé `FOOTBALL_DATA_API_KEY` reste visible dans `public/config.js` une
-  fois le site déployé (nécessaire pour appeler l'API directement depuis le
-  navigateur) — elle n'est juste plus stockée dans l'historique GitHub grâce
-  aux variables d'environnement Vercel. C'est sans risque réel ici (clé
-  gratuite, pas de données sensibles) tant que le lien admin reste privé.
+- La clé `FOOTBALL_DATA_API_KEY` n'est jamais envoyée au navigateur : elle
+  reste côté serveur, lue par `api/matches.js` uniquement.
 
 Si un jour tu veux muscler la sécurité (vrai login, clé API cachée
 côté serveur), on pourra faire évoluer ça avec des fonctions Supabase — mais

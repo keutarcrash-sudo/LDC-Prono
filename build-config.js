@@ -2,11 +2,11 @@
 // Exécuté automatiquement au déploiement (voir "build" dans package.json).
 const fs = require("fs");
 
+// FOOTBALL_DATA_API_KEY et COMPETITION_CODE ne sont PAS inclus ici : ils
+// restent côté serveur, lus directement par api/matches.js.
 const keys = [
   "SUPABASE_URL",
   "SUPABASE_ANON_KEY",
-  "FOOTBALL_DATA_API_KEY",
-  "COMPETITION_CODE",
   "SITE_BASE_URL",
 ];
 
