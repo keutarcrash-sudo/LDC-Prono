@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Pronostics Ligue des Champions</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="config.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 16px; background: #0e1116; color: #eaeef2; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; border-top: 1px solid #2a2f3a; padding-top: 1.5rem; }
+  .card { background: #161b22; border: 1px solid #2a2f3a; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  label { display: block; margin: 10px 0 4px; font-size: 0.9rem; color: #9aa4b2; }
+  input, button { font-size: 1rem; padding: 8px 10px; border-radius: 6px; border: 1px solid #2a2f3a; }
+  input { width: 100%; background: #0e1116; color: #eaeef2; }
+  button { background: #3b82f6; color: white; border: none; cursor: pointer; margin-top: 12px; }
+  button:hover { background: #2563eb; }
+  button.secondary { background: #2a2f3a; }
+  button.secondary:hover { background: #3a4150; }
+  .match-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #2a2f3a; gap: 8px; flex-wrap: wrap; }
+  .match-row:last-child { border-bottom: none; }
+  .score-edit { display: flex; align-items: center; gap: 6px; }
+  .score-edit input { width: 46px; text-align: center; }
+  #qrcode { background: white; padding: 12px; display: inline-block; border-radius: 8px; margin-top: 12px; }
+  .msg { padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 0.9rem; }
+  .msg.ok { background: #14361f; color: #7ee08a; }
+  .msg.err { background: #3a1414; color: #ff8a8a; }
+  .soiree-block { margin-top: 24px; }
+  .link-box { font-size: 0.85rem; word-break: break-all; color: #9aa4b2; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>⚙️ Admin — Pronostics Ligue des Champions</h1>
+  <p style="color:#9aa4b2; font-size:0.9rem;">Ne partage ce lien qu'avec l'équipe de l'Arena. Il permet de créer les soirées et de modifier les résultats.</p>
+
+  <div class="card">
+    <h2 style="margin-top:0; border:none; padding-top:0;">Créer une soirée</h2>
+    <label for="date">Date de la soirée</label>
+    <input type="date" id="date" />
+    <label for="label">Nom de la soirée (optionnel)</label>
+    <input type="text" id="label" placeholder="ex: Soirée Journée 3" />
+    <button id="btnCreate">Créer la soirée et importer les matchs</button>
+    <div id="createMsg"></div>
+  </div>
+
+  <h2>Soirées existantes</h2>
+  <div id="soireesList"></div>
+
+  <script>
+    const { SUPABASE_URL, SUPABASE_ANON_KEY, FOOTBALL_DATA_API_KEY, COMPETITION_CODE, SITE_BASE_URL } = window.APP_CONFIG;
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function randomCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let out = "";
+      for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
+      return out;
+    }
+
+    function showMsg(el, text, ok) {
+      el.innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
+    }
+
+    async function fetchMatchesForDate(dateStr) {
+      const url = `https://api.football-data.org/v4/competitions/${COMPETITION_CODE}/matches?dateFrom=${dateStr}&dateTo=${dateStr}`;
+      const res = await fetch(url, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
+      if (!res.ok) throw new Error(`Erreur API football-data.org (${res.status})`);
+      const data = await res.json();
+      return data.matches || [];
+    }
+
+    document.getElementById("btnCreate").addEventListener("click", async () => {
+      const dateInput = document.getElementById("date").value;
+      const label = document.getElementById("label").value.trim();
+      const msgEl = document.getElementById("createMsg");
+      if (!dateInput) { showMsg(msgEl, "Choisis une date.", false); return; }
+
+      try {
+        showMsg(msgEl, "Import des matchs en cours…", true);
+        const apiMatches = await fetchMatchesForDate(dateInput);
+
+        const { data: soiree, error: err1 } = await sb.from("soirees").insert({
+          date: dateInput,
+          code_qr: randomCode(),
+          label: label || null,
+        }).select().single();
+        if (err1) throw err1;
+
+        if (apiMatches.length > 0) {
+          const rows = apiMatches.map(m => ({
+            soiree_id: soiree.id,
+            external_match_id: String(m.id),
+            equipe_domicile: m.homeTeam?.shortName || m.homeTeam?.name || "?",
+            equipe_exterieur: m.awayTeam?.shortName || m.awayTeam?.name || "?",
+            coup_envoi: m.utcDate,
+            statut: m.status,
+          }));
+          const { error: err2 } = await sb.from("matchs").insert(rows);
+          if (err2) throw err2;
+          showMsg(msgEl, `Soirée créée avec ${rows.length} match(s) importé(s).`, true);
+        } else {
+          showMsg(msgEl, "Soirée créée, mais aucun match Ligue des Champions trouvé à cette date sur l'API. Tu peux quand même ajouter un match manuellement plus bas une fois la page rechargée (fonctionnalité à venir), ou vérifier la date.", true);
+        }
+
+        document.getElementById("date").value = "";
+        document.getElementById("label").value = "";
+        loadSoirees();
+      } catch (e) {
+        showMsg(msgEl, "Erreur : " + e.message, false);
+      }
+    });
+
+    async function syncResults(soiree, matchs, containerEl) {
+      const msgEl = containerEl.querySelector(".sync-msg");
+      showMsg(msgEl, "Actualisation des résultats…", true);
+      try {
+        const apiMatches = await fetchMatchesForDate(soiree.date);
+        const byId = {};
+        apiMatches.forEach(m => byId[String(m.id)] = m);
+
+        let updated = 0;
+        for (const m of matchs) {
+          const apiMatch = m.external_match_id ? byId[m.external_match_id] : null;
+          if (apiMatch && apiMatch.status === "FINISHED" && apiMatch.score?.fullTime) {
+            const { error } = await sb.from("matchs").update({
+              score_domicile: apiMatch.score.fullTime.home,
+              score_exterieur: apiMatch.score.fullTime.away,
+              statut: "FINISHED",
+            }).eq("id", m.id);
+            if (!error) updated++;
+          }
+        }
+        showMsg(msgEl, `${updated} match(s) mis à jour.`, true);
+        loadSoirees();
+      } catch (e) {
+        showMsg(msgEl, "Erreur : " + e.message, false);
+      }
+    }
+
+    async function saveManualScore(matchId, homeVal, awayVal, msgEl) {
+      const h = parseInt(homeVal, 10), a = parseInt(awayVal, 10);
+      if (Number.isNaN(h) || Number.isNaN(a)) { showMsg(msgEl, "Scores invalides.", false); return; }
+      const { error } = await sb.from("matchs").update({ score_domicile: h, score_exterieur: a, statut: "FINISHED" }).eq("id", matchId);
+      if (error) showMsg(msgEl, "Erreur : " + error.message, false);
+      else showMsg(msgEl, "Score enregistré, points recalculés.", true);
+    }
+
+    async function loadSoirees() {
+      const listEl = document.getElementById("soireesList");
+      const { data: soirees, error } = await sb.from("soirees").select("*").order("date", { ascending: false });
+      if (error) { listEl.innerHTML = `<div class="msg err">Erreur : ${error.message}</div>`; return; }
+
+      listEl.innerHTML = "";
+      for (const soiree of soirees) {
+        const { data: matchs } = await sb.from("matchs").select("*").eq("soiree_id", soiree.id).order("coup_envoi");
+        const block = document.createElement("div");
+        block.className = "card soiree-block";
+
+        const link = `${SITE_BASE_URL}pronostics.html?code=${soiree.code_qr}`;
+        block.innerHTML = `
+          <h3 style="margin:0;">${soiree.label || "Soirée"} — ${soiree.date} <span style="color:#9aa4b2; font-weight:normal;">(code ${soiree.code_qr})</span></h3>
+          <div id="qr-${soiree.id}"></div>
+          <div class="link-box">${link}</div>
+          <div class="matches"></div>
+          <button class="secondary btn-sync">Actualiser les résultats depuis l'API</button>
+          <div class="sync-msg"></div>
+        `;
+        listEl.appendChild(block);
+
+        new QRCode(block.querySelector(`#qr-${soiree.id}`), { text: link, width: 160, height: 160 });
+
+        const matchesEl = block.querySelector(".matches");
+        (matchs || []).forEach(m => {
+          const row = document.createElement("div");
+          row.className = "match-row";
+          const kickoff = new Date(m.coup_envoi).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+          row.innerHTML = `
+            <span>${kickoff} — ${m.equipe_domicile} vs ${m.equipe_exterieur}</span>
+            <span class="score-edit">
+              <input type="number" min="0" value="${m.score_domicile ?? ''}" placeholder="-" />
+              <span>-</span>
+              <input type="number" min="0" value="${m.score_exterieur ?? ''}" placeholder="-" />
+              <button class="secondary btn-save-score">Enregistrer</button>
+            </span>
+          `;
+          const inputs = row.querySelectorAll("input");
+          row.querySelector(".btn-save-score").addEventListener("click", () => {
+            saveManualScore(m.id, inputs[0].value, inputs[1].value, block.querySelector(".sync-msg"));
+          });
+          matchesEl.appendChild(row);
+        });
+
+        block.querySelector(".btn-sync").addEventListener("click", () => syncResults(soiree, matchs || [], block));
+      }
+    }
+
+    loadSoirees();
+  </script>
+</body>
+</html>

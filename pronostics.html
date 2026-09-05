@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pronostics — Ligue des Champions</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px 16px 60px; background: #0e1116; color: #eaeef2; }
+  h1 { font-size: 1.3rem; text-align: center; }
+  .card { background: #161b22; border: 1px solid #2a2f3a; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  label { display: block; margin: 10px 0 4px; font-size: 0.9rem; color: #9aa4b2; }
+  input, button { font-size: 1rem; padding: 10px; border-radius: 6px; border: 1px solid #2a2f3a; width: 100%; }
+  input { background: #0e1116; color: #eaeef2; }
+  button { background: #3b82f6; color: white; border: none; cursor: pointer; margin-top: 16px; font-weight: 600; }
+  button:hover { background: #2563eb; }
+  .match-card { margin-bottom: 12px; }
+  .teams { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px; }
+  .kickoff { color: #9aa4b2; font-size: 0.8rem; margin-bottom: 10px; }
+  .score-inputs { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .score-inputs input { width: 64px; text-align: center; font-size: 1.3rem; }
+  .closed { opacity: 0.5; }
+  .badge { display: inline-block; font-size: 0.75rem; background: #2a2f3a; color: #9aa4b2; padding: 2px 8px; border-radius: 999px; }
+  .msg { padding: 12px; border-radius: 6px; margin-top: 10px; font-size: 0.9rem; text-align: center; }
+  .msg.ok { background: #14361f; color: #7ee08a; }
+  .msg.err { background: #3a1414; color: #ff8a8a; }
+  #app { display: none; }
+</style>
+</head>
+<body>
+  <h1>⚽ Pronostics — Ligue des Champions</h1>
+
+  <div id="invalidCode" class="card" style="display:none; text-align:center;">
+    <p>QR code invalide ou expiré.</p>
+    <p style="color:#9aa4b2; font-size:0.9rem;">Merci de scanner le QR code affiché ce soir à l'Arena pour pronostiquer les matchs de la soirée.</p>
+  </div>
+
+  <div id="loading" class="card" style="text-align:center;">Chargement…</div>
+
+  <div id="app">
+    <div class="card" id="identityCard">
+      <label for="pseudo">Ton pseudo</label>
+      <input type="text" id="pseudo" placeholder="ex: Julien" maxlength="30" />
+      <label for="phone">Ton numéro de téléphone</label>
+      <input type="tel" id="phone" placeholder="ex: 0612345678" />
+      <p style="color:#9aa4b2; font-size:0.8rem;">Le téléphone sert juste à te reconnaître d'une soirée à l'autre pour le classement de la saison.</p>
+    </div>
+
+    <div id="matchesContainer"></div>
+
+    <button id="btnSubmit">Enregistrer mes pronostics</button>
+    <div id="submitMsg"></div>
+  </div>
+
+  <script>
+    const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const params = new URLSearchParams(window.location.search);
+    const code = (params.get("code") || "").toUpperCase().trim();
+
+    let soiree = null;
+    let matchs = [];
+    let joueurId = localStorage.getItem("ldc_joueur_id") || null;
+
+    function todayStr() {
+      const d = new Date();
+      return d.toISOString().slice(0, 10);
+    }
+
+    function showMsg(el, text, ok) {
+      el.innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
+    }
+
+    async function init() {
+      if (!code) { fail(); return; }
+
+      const { data, error } = await sb.from("soirees").select("*").eq("code_qr", code).maybeSingle();
+      if (error || !data) { fail(); return; }
+
+      if (data.date !== todayStr()) { fail(); return; }
+
+      soiree = data;
+      const { data: m, error: mErr } = await sb.from("matchs").select("*").eq("soiree_id", soiree.id).order("coup_envoi");
+      if (mErr) { fail(); return; }
+      matchs = m || [];
+
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("app").style.display = "block";
+
+      const savedPseudo = localStorage.getItem("ldc_pseudo");
+      const savedPhone = localStorage.getItem("ldc_phone");
+      if (savedPseudo) document.getElementById("pseudo").value = savedPseudo;
+      if (savedPhone) document.getElementById("phone").value = savedPhone;
+
+      renderMatches();
+
+      if (savedPhone) {
+        await loadExistingPronostics(savedPhone);
+      }
+    }
+
+    function fail() {
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("invalidCode").style.display = "block";
+    }
+
+    function renderMatches() {
+      const container = document.getElementById("matchesContainer");
+      container.innerHTML = "";
+      const now = new Date();
+      matchs.forEach(m => {
+        const kickoff = new Date(m.coup_envoi);
+        const isClosed = now >= kickoff;
+        const card = document.createElement("div");
+        card.className = "card match-card" + (isClosed ? " closed" : "");
+        card.innerHTML = `
+          <div class="teams"><span>${m.equipe_domicile}</span><span>vs</span><span>${m.equipe_exterieur}</span></div>
+          <div class="kickoff">${kickoff.toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit" })} ${isClosed ? '<span class="badge">Clôturé</span>' : ''}</div>
+          <div class="score-inputs">
+            <input type="number" min="0" max="20" data-match="${m.id}" data-side="home" ${isClosed ? "disabled" : ""} />
+            <span>-</span>
+            <input type="number" min="0" max="20" data-match="${m.id}" data-side="away" ${isClosed ? "disabled" : ""} />
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function loadExistingPronostics(phone) {
+      const { data: joueur } = await sb.from("joueurs").select("*").eq("phone", phone).maybeSingle();
+      if (!joueur) return;
+      joueurId = joueur.id;
+      const matchIds = matchs.map(m => m.id);
+      if (matchIds.length === 0) return;
+      const { data: existing } = await sb.from("pronostics").select("*").eq("joueur_id", joueur.id).in("match_id", matchIds);
+      (existing || []).forEach(p => {
+        const homeInput = document.querySelector(`input[data-match="${p.match_id}"][data-side="home"]`);
+        const awayInput = document.querySelector(`input[data-match="${p.match_id}"][data-side="away"]`);
+        if (homeInput) homeInput.value = p.score_domicile_predit;
+        if (awayInput) awayInput.value = p.score_exterieur_predit;
+      });
+    }
+
+    document.getElementById("btnSubmit").addEventListener("click", async () => {
+      const msgEl = document.getElementById("submitMsg");
+      const pseudo = document.getElementById("pseudo").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+
+      if (!pseudo || !phone) { showMsg(msgEl, "Merci de renseigner ton pseudo et ton téléphone.", false); return; }
+
+      try {
+        let { data: joueur } = await sb.from("joueurs").select("*").eq("phone", phone).maybeSingle();
+        if (joueur) {
+          if (joueur.pseudo !== pseudo) {
+            await sb.from("joueurs").update({ pseudo }).eq("id", joueur.id);
+          }
+        } else {
+          const { data: newJoueur, error: jErr } = await sb.from("joueurs").insert({ phone, pseudo }).select().single();
+          if (jErr) throw jErr;
+          joueur = newJoueur;
+        }
+        joueurId = joueur.id;
+        localStorage.setItem("ldc_joueur_id", joueurId);
+        localStorage.setItem("ldc_pseudo", pseudo);
+        localStorage.setItem("ldc_phone", phone);
+
+        const now = new Date();
+        const rows = [];
+        for (const m of matchs) {
+          const kickoff = new Date(m.coup_envoi);
+          if (now >= kickoff) continue;
+          const homeInput = document.querySelector(`input[data-match="${m.id}"][data-side="home"]`);
+          const awayInput = document.querySelector(`input[data-match="${m.id}"][data-side="away"]`);
+          if (homeInput.value === "" || awayInput.value === "") continue;
+          rows.push({
+            joueur_id: joueur.id,
+            match_id: m.id,
+            score_domicile_predit: parseInt(homeInput.value, 10),
+            score_exterieur_predit: parseInt(awayInput.value, 10),
+          });
+        }
+
+        if (rows.length === 0) { showMsg(msgEl, "Renseigne au moins un pronostic avant d'envoyer.", false); return; }
+
+        const { error: pErr } = await sb.from("pronostics").upsert(rows, { onConflict: "joueur_id,match_id" });
+        if (pErr) throw pErr;
+
+        showMsg(msgEl, `Pronostics enregistrés pour ${rows.length} match(s). Bonne soirée à l'Arena !`, true);
+      } catch (e) {
+        showMsg(msgEl, "Erreur : " + e.message, false);
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
