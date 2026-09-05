@@ -17,6 +17,7 @@ create table soirees (
   date date not null,
   code_qr text unique not null,
   label text,
+  recompense text default '1 pinte offerte',
   created_at timestamptz default now()
 );
 
@@ -165,3 +166,10 @@ create policy "suppr publique matchs" on matchs for delete using (true);
 create policy "lecture publique pronostics" on pronostics for select using (true);
 create policy "creation publique pronostics" on pronostics for insert with check (true);
 create policy "maj publique pronostics" on pronostics for update using (true);
+
+-- ============================================================
+-- Migration — à coller et exécuter une seule fois dans le SQL
+-- Editor si ta base a été créée avant l'ajout du champ "recompense"
+-- (sans risque de la relancer plusieurs fois par erreur).
+-- ============================================================
+alter table soirees add column if not exists recompense text default '1 pinte offerte';

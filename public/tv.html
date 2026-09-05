@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Predicto TV — Arena 18</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0F1C;
+    --surface: #15223B;
+    --border: #253758;
+    --accent: #1E90FF;
+    --accent-bright: #00F0FF;
+    --gold: #FFD600;
+    --silver: #C7D2E3;
+    --bronze: #D89B5D;
+    --success: #00E6A1;
+    --closed: #7C6CE0;
+    --text: #FFFFFF;
+    --text-muted: #8B96AC;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Manrope', system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .screen { width: 100%; max-width: 1400px; padding: 40px; text-align: center; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 3px; color: var(--accent-bright); font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
+  .eyebrow.gold { color: var(--gold); }
+  .eyebrow.closed { color: var(--closed); }
+  h1 { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; letter-spacing: 1px; margin: 0 0 20px; line-height: 1; }
+  .sub { color: var(--text-muted); font-size: 1.4rem; margin-bottom: 40px; }
+  #qrcode { background: white; padding: 20px; display: inline-block; border-radius: 20px; }
+  .countdown { font-family: 'Bebas Neue', sans-serif; font-size: 3rem; color: var(--gold); letter-spacing: 2px; margin-top: 24px; }
+  .match-list { display: flex; flex-direction: column; gap: 16px; max-width: 900px; margin: 0 auto; }
+  .match-row {
+    display: flex; justify-content: space-between; align-items: center; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; padding: 20px 32px; font-size: 1.8rem; font-weight: 800;
+  }
+  .match-row .score { color: var(--accent-bright); font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; }
+  .match-row.finished .score { color: var(--success); }
+  .match-row .check { margin-left: 12px; }
+  .podium { display: flex; flex-direction: column; gap: 14px; max-width: 700px; margin: 0 auto; }
+  .podium-row {
+    display: flex; align-items: center; justify-content: space-between; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; padding: 18px 28px; font-size: 1.8rem; font-weight: 800;
+  }
+  .podium-row .rank { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; width: 60px; text-align: left; }
+  .podium-row.gold { border-color: var(--gold); }
+  .podium-row .pts { color: var(--gold); }
+  .reward { margin-top: 28px; font-size: 1.5rem; color: var(--text-muted); }
+  .reward b { color: var(--gold); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="screen">
+
+    <div id="phase-idle" hidden>
+      <div class="eyebrow gold">Predicto — Top saison</div>
+      <h1>Classement de la saison</h1>
+      <div class="podium" id="idleList"></div>
+    </div>
+
+    <div id="phase-avant" hidden>
+      <div class="eyebrow" id="avantLabel">Soirée Ligue des Champions</div>
+      <h1 id="avantTitle">3 matchs à pronostiquer</h1>
+      <div id="qrcode"></div>
+      <div class="sub">Scanne le QR code pour jouer !</div>
+      <div class="countdown" id="avantCountdown"></div>
+    </div>
+
+    <div id="phase-ferme" hidden>
+      <div class="eyebrow closed">🔒 Pronostics fermés</div>
+      <h1>Que la meilleure équipe de<br>pronostiqueurs gagne !</h1>
+      <div class="match-list" id="fermeList"></div>
+    </div>
+
+    <div id="phase-resultats" hidden>
+      <div class="eyebrow">Résultats</div>
+      <h1>Résultats de la soirée</h1>
+      <div class="match-list" id="resultatsList"></div>
+    </div>
+
+    <div id="phase-classement" hidden>
+      <div class="eyebrow gold">🏆 Classement de la soirée</div>
+      <h1>Bravo aux meilleurs pronostiqueurs !</h1>
+      <div class="podium" id="classementList"></div>
+      <div class="reward" id="rewardLine"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const { SUPABASE_URL, SUPABASE_ANON_KEY, SITE_BASE_URL } = window.APP_CONFIG;
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let rotateToggle = false;
+    let qrRendered = null;
+    let cachedEarliestKickoff = null;
+
+    function todayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function formatCountdown(ms) {
+      const totalSec = Math.max(0, Math.floor(ms / 1000));
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    function showPhase(name) {
+      ["idle", "avant", "ferme", "resultats", "classement"].forEach(p => {
+        document.getElementById(`phase-${p}`).hidden = (p !== name);
+      });
+    }
+
+    function rankRowsHtml(rows, pointsKey, extraClass) {
+      if (!rows || rows.length === 0) {
+        return `<div class="podium-row"><span>Aucun pronostic pour l'instant</span></div>`;
+      }
+      const medals = ["🥇", "🥈", "🥉"];
+      return rows.slice(0, 5).map((r, i) => `
+        <div class="podium-row ${i === 0 ? 'gold' : ''} ${extraClass || ''}">
+          <span class="rank">${medals[i] || i + 1}</span>
+          <span>${r.pseudo}</span>
+          <span class="pts">${r[pointsKey] ?? 0} pts</span>
+        </div>
+      `).join("");
+    }
+
+    async function renderIdle() {
+      const { data } = await sb.from("classement_saison").select("*").order("points_total", { ascending: false }).limit(5);
+      document.getElementById("idleList").innerHTML = rankRowsHtml(data, "points_total");
+      showPhase("idle");
+    }
+
+    async function tick() {
+      const { data: soiree } = await sb.from("soirees").select("*").eq("date", todayStr()).order("created_at", { ascending: false }).limit(1).maybeSingle();
+
+      if (!soiree) { await renderIdle(); return; }
+
+      const { data: matchs } = await sb.from("matchs").select("*").eq("soiree_id", soiree.id).order("coup_envoi");
+      if (!matchs || matchs.length === 0) { await renderIdle(); return; }
+
+      const now = new Date();
+      const kickoffs = matchs.map(m => new Date(m.coup_envoi));
+      const earliestKickoff = new Date(Math.min(...kickoffs));
+      const allFinished = matchs.every(m => m.score_domicile !== null && m.score_exterieur !== null);
+
+      if (now < earliestKickoff) {
+        cachedEarliestKickoff = earliestKickoff;
+        document.getElementById("avantLabel").textContent = soiree.label || `Soirée du ${soiree.date}`;
+        document.getElementById("avantTitle").textContent = `${matchs.length} match${matchs.length > 1 ? "s" : ""} à pronostiquer`;
+        const link = `${SITE_BASE_URL}pronostics.html?code=${soiree.code_qr}`;
+        if (qrRendered !== link) {
+          document.getElementById("qrcode").innerHTML = "";
+          new QRCode(document.getElementById("qrcode"), { text: link, width: 220, height: 220 });
+          qrRendered = link;
+        }
+        showPhase("avant");
+        return;
+      }
+
+      if (!allFinished) {
+        document.getElementById("fermeList").innerHTML = matchs.map(m => {
+          const finished = m.score_domicile !== null;
+          const score = finished ? `${m.score_domicile} - ${m.score_exterieur}` : "en cours";
+          return `<div class="match-row ${finished ? 'finished' : ''}"><span>${m.equipe_domicile} vs ${m.equipe_exterieur}</span><span class="score">${score}</span></div>`;
+        }).join("");
+        showPhase("ferme");
+        return;
+      }
+
+      // Tous les résultats sont là : on alterne résultats <-> classement
+      rotateToggle = !rotateToggle;
+      if (rotateToggle) {
+        document.getElementById("resultatsList").innerHTML = matchs.map(m => `
+          <div class="match-row finished">
+            <span>${m.equipe_domicile} vs ${m.equipe_exterieur}</span>
+            <span class="score">${m.score_domicile} - ${m.score_exterieur} <span class="check">✅</span></span>
+          </div>
+        `).join("");
+        showPhase("resultats");
+      } else {
+        const { data: classementSoiree } = await sb.from("classement_soiree")
+          .select("*").eq("soiree_id", soiree.id).order("points_soiree", { ascending: false }).limit(5);
+        document.getElementById("classementList").innerHTML = rankRowsHtml(classementSoiree, "points_soiree");
+        document.getElementById("rewardLine").innerHTML = soiree.recompense ? `Récompense de la soirée : <b>${soiree.recompense}</b>` : "";
+        showPhase("classement");
+      }
+    }
+
+    function tickCountdown() {
+      if (document.getElementById("phase-avant").hidden || !cachedEarliestKickoff) return;
+      const remaining = cachedEarliestKickoff - new Date();
+      document.getElementById("avantCountdown").textContent = "Coup d'envoi dans " + formatCountdown(remaining);
+    }
+
+    tick();
+    setInterval(tick, 10000);
+    setInterval(tickCountdown, 1000);
+  </script>
+</body>
+</html>

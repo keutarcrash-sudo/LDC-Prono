@@ -79,6 +79,8 @@
       <input type="date" id="date" />
       <label for="label">Nom de la soirée (optionnel)</label>
       <input type="text" id="label" placeholder="ex: Soirée Journée 3" />
+      <label for="recompense">Récompense de la soirée</label>
+      <input type="text" id="recompense" placeholder="ex: 1 pinte offerte" value="1 pinte offerte" />
       <button id="btnCreate">Créer la soirée et importer les matchs</button>
       <div id="createMsg"></div>
     </div>
@@ -120,6 +122,7 @@
     document.getElementById("btnCreate").addEventListener("click", async () => {
       const dateInput = document.getElementById("date").value;
       const label = document.getElementById("label").value.trim();
+      const recompense = document.getElementById("recompense").value.trim();
       const msgEl = document.getElementById("createMsg");
       if (!dateInput) { showMsg(msgEl, "Choisis une date.", false); return; }
 
@@ -131,6 +134,7 @@
           date: dateInput,
           code_qr: randomCode(),
           label: label || null,
+          recompense: recompense || null,
         }).select().single();
         if (err1) throw err1;
 
@@ -152,6 +156,7 @@
 
         document.getElementById("date").value = "";
         document.getElementById("label").value = "";
+        document.getElementById("recompense").value = "1 pinte offerte";
         loadSoirees();
       } catch (e) {
         showMsg(msgEl, "Erreur : " + e.message, false);
