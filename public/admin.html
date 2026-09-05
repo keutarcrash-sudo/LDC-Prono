@@ -121,7 +121,7 @@
           if (err2) throw err2;
           showMsg(msgEl, `Soirée créée avec ${rows.length} match(s) importé(s).`, true);
         } else {
-          showMsg(msgEl, "Soirée créée, mais aucun match Ligue des Champions trouvé à cette date sur l'API. Tu peux quand même ajouter un match manuellement plus bas une fois la page rechargée (fonctionnalité à venir), ou vérifier la date.", true);
+          showMsg(msgEl, "Soirée créée, mais aucun match Ligue des Champions trouvé à cette date sur l'API. Tu peux ajouter un match manuellement plus bas.", true);
         }
 
         document.getElementById("date").value = "";
@@ -167,6 +167,22 @@
       else showMsg(msgEl, "Score enregistré, points recalculés.", true);
     }
 
+    async function addManualMatch(soireeId, home, away, kickoffLocal, msgEl) {
+      if (!home.trim() || !away.trim() || !kickoffLocal) {
+        showMsg(msgEl, "Renseigne les deux équipes et l'heure du coup d'envoi.", false);
+        return;
+      }
+      const { error } = await sb.from("matchs").insert({
+        soiree_id: soireeId,
+        equipe_domicile: home.trim(),
+        equipe_exterieur: away.trim(),
+        coup_envoi: new Date(kickoffLocal).toISOString(),
+        statut: "SCHEDULED",
+      });
+      if (error) { showMsg(msgEl, "Erreur : " + error.message, false); return; }
+      loadSoirees();
+    }
+
     async function loadSoirees() {
       const listEl = document.getElementById("soireesList");
       const { data: soirees, error } = await sb.from("soirees").select("*").order("date", { ascending: false });
@@ -184,6 +200,14 @@
           <div id="qr-${soiree.id}"></div>
           <div class="link-box">${link}</div>
           <div class="matches"></div>
+          <div class="add-match-form">
+            <div class="match-row" style="border-bottom:none; flex-wrap:wrap; gap:8px;">
+              <input type="text" class="input-home" placeholder="Équipe domicile" style="width:auto; flex:1; min-width:120px;" />
+              <input type="text" class="input-away" placeholder="Équipe extérieur" style="width:auto; flex:1; min-width:120px;" />
+              <input type="datetime-local" class="input-kickoff" style="width:auto;" />
+              <button class="secondary btn-add-match" type="button">+ Ajouter un match</button>
+            </div>
+          </div>
           <button class="secondary btn-sync">Actualiser les résultats depuis l'API</button>
           <div class="sync-msg"></div>
         `;
@@ -213,6 +237,13 @@
         });
 
         block.querySelector(".btn-sync").addEventListener("click", () => syncResults(soiree, matchs || [], block));
+
+        block.querySelector(".btn-add-match").addEventListener("click", () => {
+          const home = block.querySelector(".input-home").value;
+          const away = block.querySelector(".input-away").value;
+          const kickoff = block.querySelector(".input-kickoff").value;
+          addManualMatch(soiree.id, home, away, kickoff, block.querySelector(".sync-msg"));
+        });
       }
     }
 
