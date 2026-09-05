@@ -173,7 +173,7 @@
     const REWARD_LABELS = {
       biere: "🍺 Demi de bière blonde",
       soft: "🥤 Soft au choix (hors energy drink)",
-      vin: "🍷 Verre de vin au choix",
+      vin: "🍷 Verre de vin (blanc, rouge, rosé) au choix",
     };
 
     let joueur = null;
@@ -258,7 +258,7 @@
           <div class="choice-grid">
             <button type="button" class="choice-btn" data-choice="biere"><span class="emoji">🍺</span><span>Demi de bière blonde</span></button>
             <button type="button" class="choice-btn" data-choice="soft"><span class="emoji">🥤</span><span>Soft au choix<span class="choice-sub">Hors energy drink</span></span></button>
-            <button type="button" class="choice-btn" data-choice="vin"><span class="emoji">🍷</span><span>Verre de vin au choix</span></button>
+            <button type="button" class="choice-btn" data-choice="vin"><span class="emoji">🍷</span><span>Verre de vin au choix<span class="choice-sub">Blanc, rouge ou rosé</span></span></button>
           </div>
         `;
         body.querySelectorAll(".choice-btn").forEach(btn => {

@@ -209,7 +209,7 @@
         const { data: classementSoiree } = await sb.from("classement_soiree")
           .select("*").eq("soiree_id", soiree.id).order("points_soiree", { ascending: false }).limit(5);
         document.getElementById("classementList").innerHTML = rankRowsHtml(classementSoiree, "points_soiree");
-        const REWARD_LABELS = { biere: "🍺 Demi de bière blonde", soft: "🥤 Soft au choix", vin: "🍷 Verre de vin au choix" };
+        const REWARD_LABELS = { biere: "🍺 Demi de bière blonde", soft: "🥤 Soft au choix", vin: "🍷 Verre de vin (blanc, rouge, rosé) au choix" };
         if (soiree.recompense_choix) {
           document.getElementById("rewardLine").innerHTML = `Récompense choisie : <b>${REWARD_LABELS[soiree.recompense_choix] || soiree.recompense_choix}</b>`;
         } else if (soiree.recompense) {
