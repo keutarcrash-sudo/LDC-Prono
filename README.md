@@ -5,14 +5,20 @@ physiquement à l'Arena chaque soirée de Ligue des Champions : QR code
 affiché uniquement le soir même, classement de la soirée (petit lot,
 ex: une bière) + classement cumulé de la saison (lot final).
 
-## Les 4 fichiers
+## Les fichiers
 
-- `admin.html` — page **staff uniquement**. Créer une soirée, importer les
-  matchs, générer le QR code à afficher, saisir/actualiser les résultats.
-- `pronostics.html` — page **joueurs**. C'est elle que le QR code cible.
-- `classement.html` — écran à projeter dans l'Arena (classement du soir +
-  classement saison), s'actualise tout seul toutes les 20 secondes.
-- `config.js` — tes identifiants (à remplir une seule fois, voir ci-dessous).
+- `public/admin.html` — page **staff uniquement**. Créer une soirée,
+  importer les matchs, générer le QR code à afficher, saisir/actualiser les
+  résultats.
+- `public/pronostics.html` — page **joueurs**. C'est elle que le QR code
+  cible.
+- `public/classement.html` — écran à projeter dans l'Arena (classement du
+  soir + classement saison), s'actualise tout seul toutes les 20 secondes.
+- `public/config.js` — **généré automatiquement par Vercel** à chaque
+  déploiement (voir `build-config.js`) à partir des variables d'environnement
+  ci-dessous. Ne pas l'éditer ni le committer (il est dans `.gitignore`).
+- `config.example.js` — juste une référence pour voir à quoi ressemble le
+  fichier généré, ne sert à rien en pratique.
 
 ## Mise en place (une seule fois)
 
@@ -25,7 +31,7 @@ ex: une bière) + classement cumulé de la saison (lot final).
    contenu, colle-le dans l'éditeur SQL, puis clique **Run**.
 5. Va dans **Project Settings > API**. Note :
    - le **Project URL**
-   - la clé **anon public**
+   - la clé **anon public / publishable**
 
 ### 2. Créer une clé football-data.org (résultats automatiques)
 
@@ -36,28 +42,31 @@ ex: une bière) + classement cumulé de la saison (lot final).
 3. Le plan gratuit couvre la Ligue des Champions et suffit largement pour cet
    usage (limite ~10 requêtes/minute).
 
-### 3. Remplir `config.js`
+### 3. Déployer sur Vercel
 
-Ouvre `config.js` et remplace les 5 valeurs par les tiennes :
+1. Va sur [vercel.com](https://vercel.com), connecte-toi avec ton compte
+   GitHub.
+2. **Add New... > Project**, choisis le dépôt `LDC-Prono`.
+3. Vercel détecte automatiquement `vercel.json` (build + dossier `public/`).
+   Avant de cliquer Deploy, ouvre la section **Environment Variables** et
+   ajoute ces 5 lignes (nom exact à gauche, ta valeur à droite) :
 
-```js
-SUPABASE_URL: "https://xxxxx.supabase.co",
-SUPABASE_ANON_KEY: "eyJ...",
-FOOTBALL_DATA_API_KEY: "xxxxxxxxxxxx",
-COMPETITION_CODE: "CL",
-SITE_BASE_URL: "https://ton-site.exemple.com/",
-```
+   | Nom | Valeur |
+   |---|---|
+   | `SUPABASE_URL` | `https://xxxxx.supabase.co` |
+   | `SUPABASE_ANON_KEY` | ta clé anon/publishable Supabase |
+   | `FOOTBALL_DATA_API_KEY` | ta clé football-data.org |
+   | `COMPETITION_CODE` | `CL` |
+   | `SITE_BASE_URL` | laisse temporairement `https://a-completer.vercel.app/` |
 
-`SITE_BASE_URL` doit être l'adresse où tu vas héberger ces fichiers (voir
-étape suivante), avec un `/` à la fin. C'est ce qui sert à fabriquer le lien
-encodé dans le QR code.
+4. Clique **Deploy**. Une fois le déploiement terminé, Vercel t'attribue une
+   adresse du style `https://ldc-prono.vercel.app`.
+5. Retourne dans **Project Settings > Environment Variables**, corrige
+   `SITE_BASE_URL` avec cette vraie adresse (avec un `/` à la fin), puis
+   relance un déploiement (**Deployments > ⋯ > Redeploy**).
 
-### 4. Héberger les fichiers
-
-Comme pour tes autres outils (`caisse-cloture.html`, `arena18-protocoles.html`) :
-dépose les 4 fichiers (`admin.html`, `pronostics.html`, `classement.html`,
-`config.js`) sur ton hébergement web habituel, dans le même dossier. Aucune
-autre dépendance serveur n'est nécessaire.
+C'est tout : à chaque fois que je pousserai une modification sur la branche,
+Vercel redéploiera automatiquement.
 
 ## Utilisation le soir d'un match
 
@@ -94,10 +103,11 @@ autre dépendance serveur n'est nécessaire.
   distance pour cette V1.
 - **`admin.html` n'a pas de mot de passe non plus** : traite son lien comme
   une info interne, ne le partage pas publiquement.
-- La clé `FOOTBALL_DATA_API_KEY` est visible dans le code de `admin.html`
-  (nécessaire pour appeler l'API directement depuis le navigateur). C'est
-  sans risque réel ici (clé gratuite, pas de données sensibles) tant que le
-  lien admin reste privé.
+- La clé `FOOTBALL_DATA_API_KEY` reste visible dans `public/config.js` une
+  fois le site déployé (nécessaire pour appeler l'API directement depuis le
+  navigateur) — elle n'est juste plus stockée dans l'historique GitHub grâce
+  aux variables d'environnement Vercel. C'est sans risque réel ici (clé
+  gratuite, pas de données sensibles) tant que le lien admin reste privé.
 
 Si un jour tu veux muscler la sécurité (vrai login, clé API cachée
 côté serveur), on pourra faire évoluer ça avec des fonctions Supabase — mais
