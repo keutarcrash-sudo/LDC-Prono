@@ -101,11 +101,35 @@
     animation: pulse-border 2.2s infinite;
   }
   .coupon .trophy { font-size: 2.6rem; }
-  .coupon .title { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: var(--gold); letter-spacing: 0.5px; margin: 4px 0; }
-  .coupon .reward-name { font-size: 1.1rem; font-weight: 800; margin: 8px 0 4px; }
-  .coupon .live-clock { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 2px; margin: 12px 0 4px; color: var(--accent-bright); }
-  .coupon .live-date { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .coupon .title { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; color: var(--gold); letter-spacing: 0.5px; margin: 4px 0; }
+  .coupon .live-date { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .coupon .victory-match { font-weight: 700; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 4px; }
+  .coupon .reward-name-big {
+    font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--text); letter-spacing: 0.5px;
+    margin: 10px 0; line-height: 1.1;
+  }
+  .coupon .live-clock { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 2px; margin: 4px 0 4px; color: var(--accent-bright); }
   .coupon .warn { font-size: 0.75rem; color: var(--text-muted); margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 12px; }
+
+  .victory-card {
+    border: 2px solid var(--success); border-radius: 16px; padding: 22px; text-align: center;
+    background: linear-gradient(180deg, rgba(0,230,161,0.1), transparent);
+    position: relative; overflow: hidden;
+  }
+  @keyframes victory-bounce {
+    0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+    60% { transform: scale(1.25) rotate(8deg); opacity: 1; }
+    80% { transform: scale(0.95) rotate(-4deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+  .victory-trophy { font-size: 3rem; animation: victory-bounce 0.6s ease-out; }
+  .victory-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; color: var(--success); letter-spacing: 0.5px; margin: 4px 0; }
+  .victory-match { font-weight: 700; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 4px; }
+  @keyframes confetti-fall {
+    0% { transform: translateY(-30px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(180px) rotate(360deg); opacity: 0; }
+  }
+  .confetti { position: absolute; top: 0; font-size: 1.3rem; animation: confetti-fall 1.6s ease-in forwards; pointer-events: none; }
 
   .rank-line { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .rank-line:last-child { border-bottom: none; }
@@ -177,7 +201,7 @@
     };
 
     let joueur = null;
-    let couponInterval = null;
+    let couponIntervals = [];
 
     function todayStr() {
       const d = new Date();
@@ -226,70 +250,99 @@
       await renderTonight();
     }
 
+    function confettiHtml() {
+      const emojis = ["🎉", "✨", "🎊", "⚽", "🏆", "✨"];
+      return emojis.map((e, i) => `<span class="confetti" style="left:${8 + i * 16}%; animation-delay:${i * 0.08}s;">${e}</span>`).join("");
+    }
+
     async function renderTonight() {
       const { data: soiree } = await sb.from("soirees").select("*").eq("date", todayStr()).order("created_at", { ascending: false }).limit(1).maybeSingle();
       const card = document.getElementById("tonightCard");
       const body = document.getElementById("tonightBody");
-      if (couponInterval) { clearInterval(couponInterval); couponInterval = null; }
+      couponIntervals.forEach(clearInterval);
+      couponIntervals = [];
 
       if (!soiree) { card.hidden = true; return; }
       card.hidden = false;
       document.getElementById("tonightTitle").textContent = soiree.label || `Soirée du ${soiree.date}`;
 
-      const { data: classementSoir } = await sb.from("classement_soiree")
-        .select("*").eq("soiree_id", soiree.id).order("points_soiree", { ascending: false });
-      const rank = (classementSoir || []).findIndex(r => r.joueur_id === joueur.id);
+      const { data: matchsSoir } = await sb.from("matchs").select("*").eq("soiree_id", soiree.id);
+      const matchIds = (matchsSoir || []).map(m => m.id);
+      if (matchIds.length === 0) {
+        body.innerHTML = `<p class="hint" style="margin:0;">Pas encore de match ce soir.</p>`;
+        return;
+      }
 
-      if (rank === -1) {
+      const { data: pronos } = await sb.from("pronostics").select("*").eq("joueur_id", joueur.id).in("match_id", matchIds);
+      if (!pronos || pronos.length === 0) {
         body.innerHTML = `<p class="hint" style="margin:0;">Tu n'as pas encore pronostiqué ce soir.</p>`;
         return;
       }
 
-      if (rank !== 0) {
-        const pts = classementSoir[rank].points_soiree ?? 0;
-        body.innerHTML = `<p style="margin:0;">Tu es <b>${rank + 1}e</b> ce soir avec <b>${pts} pts</b>. Le classement peut encore bouger !</p>`;
+      const matchById = {};
+      (matchsSoir || []).forEach(m => { matchById[m.id] = m; });
+
+      const exactWins = pronos.filter(p => p.points === 5 && matchById[p.match_id]?.score_domicile !== null);
+      const stillPending = pronos.some(p => matchById[p.match_id]?.score_domicile === null);
+
+      if (exactWins.length === 0) {
+        body.innerHTML = stillPending
+          ? `<p class="hint" style="margin:0;">🎯 En attente des résultats… Un score exact = une boisson offerte !</p>`
+          : `<p class="hint" style="margin:0;">Pas de score exact ce soir. Retente ta chance à la prochaine soirée !</p>`;
         return;
       }
 
-      // rank === 0 : le joueur est en tête ce soir
-      if (!soiree.recompense_choix) {
-        body.innerHTML = `
-          <p style="margin:0 0 4px;">🎉 Tu es <b>1er</b> ce soir ! Choisis ta récompense :</p>
-          <div class="choice-grid">
-            <button type="button" class="choice-btn" data-choice="biere"><span class="emoji">🍺</span><span>Demi de bière blonde</span></button>
-            <button type="button" class="choice-btn" data-choice="soft"><span class="emoji">🥤</span><span>Soft au choix<span class="choice-sub">Hors energy drink</span></span></button>
-            <button type="button" class="choice-btn" data-choice="vin"><span class="emoji">🍷</span><span>Verre de vin au choix<span class="choice-sub">Blanc, rouge ou rosé</span></span></button>
-          </div>
-        `;
-        body.querySelectorAll(".choice-btn").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            const choix = btn.dataset.choice;
-            const { error } = await sb.from("soirees").update({ recompense_choix: choix, recompense_choisie_at: new Date().toISOString() }).eq("id", soiree.id);
-            if (!error) renderTonight();
+      body.innerHTML = "";
+      exactWins.forEach(p => {
+        const m = matchById[p.match_id];
+        const wrap = document.createElement("div");
+        wrap.style.marginBottom = "14px";
+
+        if (!p.recompense_choix) {
+          wrap.innerHTML = `
+            <div class="victory-card">
+              ${confettiHtml()}
+              <div class="victory-trophy">🎉</div>
+              <div class="victory-title">Score exact !</div>
+              <div class="victory-match">${m.equipe_domicile} ${p.score_domicile_predit} - ${p.score_exterieur_predit} ${m.equipe_exterieur}</div>
+              <p style="margin:8px 0 0; font-size:0.85rem;">Choisis ta récompense :</p>
+              <div class="choice-grid">
+                <button type="button" class="choice-btn" data-choice="biere"><span class="emoji">🍺</span><span>Demi de bière blonde</span></button>
+                <button type="button" class="choice-btn" data-choice="soft"><span class="emoji">🥤</span><span>Soft au choix<span class="choice-sub">Hors energy drink</span></span></button>
+                <button type="button" class="choice-btn" data-choice="vin"><span class="emoji">🍷</span><span>Verre de vin au choix<span class="choice-sub">Blanc, rouge ou rosé</span></span></button>
+              </div>
+            </div>
+          `;
+          wrap.querySelectorAll(".choice-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              const choix = btn.dataset.choice;
+              const { error } = await sb.from("pronostics").update({ recompense_choix: choix, recompense_choisie_at: new Date().toISOString() }).eq("id", p.id);
+              if (!error) renderTonight();
+            });
           });
-        });
-        return;
-      }
+        } else {
+          const clockId = `liveClock-${p.id}`;
+          const dateStr = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+          wrap.innerHTML = `
+            <div class="coupon">
+              <div class="trophy">🏆</div>
+              <div class="title">Gagnant score exact</div>
+              <div class="live-date">${dateStr}</div>
+              <div class="victory-match">${m.equipe_domicile} ${p.score_domicile_predit} - ${p.score_exterieur_predit} ${m.equipe_exterieur}</div>
+              <div class="reward-name-big">${REWARD_LABELS[p.recompense_choix] || p.recompense_choix}</div>
+              <div class="live-clock" id="${clockId}"></div>
+              <div class="warn">Montre cet écran au comptoir — l'heure ci-dessus est en direct, une capture d'écran ne défilera plus.</div>
+            </div>
+          `;
+        }
+        body.appendChild(wrap);
+      });
 
-      renderCoupon(soiree);
-    }
-
-    function renderCoupon(soiree) {
-      const body = document.getElementById("tonightBody");
-      body.innerHTML = `
-        <div class="coupon">
-          <div class="trophy">🏆</div>
-          <div class="title">1er de la soirée !</div>
-          <div class="reward-name">${REWARD_LABELS[soiree.recompense_choix] || soiree.recompense_choix}</div>
-          <div class="live-clock" id="liveClock"></div>
-          <div class="live-date">${soiree.date}</div>
-          <div class="warn">Montre cet écran au comptoir — l'heure ci-dessus est en direct, une capture d'écran ne défilera plus.</div>
-        </div>
-      `;
-      const clockEl = document.getElementById("liveClock");
-      const tick = () => { clockEl.textContent = new Date().toLocaleTimeString("fr-FR"); };
-      tick();
-      couponInterval = setInterval(tick, 1000);
+      body.querySelectorAll("[id^='liveClock-']").forEach(clockEl => {
+        const tick = () => { clockEl.textContent = new Date().toLocaleTimeString("fr-FR"); };
+        tick();
+        couponIntervals.push(setInterval(tick, 1000));
+      });
     }
 
     document.getElementById("btnLookup").addEventListener("click", () => {
@@ -299,7 +352,8 @@
     });
 
     document.getElementById("btnChangePhone").addEventListener("click", () => {
-      if (couponInterval) clearInterval(couponInterval);
+      couponIntervals.forEach(clearInterval);
+      couponIntervals = [];
       document.getElementById("screen-profile").hidden = true;
       document.getElementById("screen-lookup").hidden = false;
     });

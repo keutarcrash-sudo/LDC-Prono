@@ -47,6 +47,8 @@ create table pronostics (
   score_domicile_predit int not null,
   score_exterieur_predit int not null,
   points int default 0,
+  recompense_choix text,
+  recompense_choisie_at timestamptz,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   unique (joueur_id, match_id)
@@ -177,7 +179,12 @@ create policy "maj publique pronostics" on pronostics for update using (true);
 -- (sans risque de la relancer plusieurs fois par erreur).
 -- ============================================================
 alter table soirees add column if not exists recompense text default '1 boisson offerte : demi blonde, soft (hors energy drink) ou vin (blanc/rouge/rosé) au choix';
+-- recompense_choix / recompense_choisie_at sur soirees ne sont plus utilisés
+-- (la récompense est maintenant liée au score exact par match, voir pronostics
+-- ci-dessous) — inoffensif de les laisser si déjà créés.
 alter table soirees add column if not exists recompense_choix text;
 alter table soirees add column if not exists recompense_choisie_at timestamptz;
 alter table matchs add column if not exists logo_domicile text;
 alter table matchs add column if not exists logo_exterieur text;
+alter table pronostics add column if not exists recompense_choix text;
+alter table pronostics add column if not exists recompense_choisie_at timestamptz;

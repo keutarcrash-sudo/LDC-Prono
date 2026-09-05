@@ -242,16 +242,13 @@
         block.className = "card soiree-block";
 
         const link = `${SITE_BASE_URL}pronostics.html?code=${soiree.code_qr}`;
-        const REWARD_LABELS = { biere: "🍺 Demi de bière blonde", soft: "🥤 Soft au choix", vin: "🍷 Verre de vin (blanc, rouge, rosé) au choix" };
-        const rewardBlockHtml = soiree.recompense_choix
-          ? `<p style="color:var(--text-muted); font-size:0.85rem; margin:4px 0 0;">
-               🏆 Récompense choisie par le gagnant : <b>${REWARD_LABELS[soiree.recompense_choix] || soiree.recompense_choix}</b>
-               <button class="secondary btn-reset-choix" type="button" style="margin:6px 0 0; padding:4px 8px; font-size:0.7rem;">Réinitialiser le choix</button>
-             </p>`
-          : `<div class="match-row" style="border-bottom:none; flex-wrap:wrap; gap:8px; padding:8px 0 0;">
-               <input type="text" class="input-recompense" value="${soiree.recompense || ""}" style="width:auto; flex:1; min-width:200px;" />
-               <button class="secondary btn-save-recompense" type="button" style="margin:0; padding:8px 12px; font-size:0.8rem;">Enregistrer</button>
-             </div>`;
+        const rewardBlockHtml = `
+          <div class="match-row" style="border-bottom:none; flex-wrap:wrap; gap:8px; padding:8px 0 0;">
+            <input type="text" class="input-recompense" value="${soiree.recompense || ""}" style="width:auto; flex:1; min-width:200px;" />
+            <button class="secondary btn-save-recompense" type="button" style="margin:0; padding:8px 12px; font-size:0.8rem;">Enregistrer</button>
+          </div>
+          <p class="hint" style="color:var(--text-muted); font-size:0.78rem; margin:4px 0 0;">🎯 Rappel : un score exact sur un match donne droit à une boisson offerte, pour chaque joueur qui l'a trouvé.</p>
+        `;
         block.innerHTML = `
           <h3 style="margin:0;">${soiree.label || "Soirée"} — ${soiree.date} <span class="code-tag">${soiree.code_qr}</span></h3>
           ${rewardBlockHtml}
@@ -273,13 +270,21 @@
 
         new QRCode(block.querySelector(`#qr-${soiree.id}`), { text: link, width: 160, height: 160 });
 
+        const matchIds = (matchs || []).map(m => m.id);
+        let exactCounts = {};
+        if (matchIds.length > 0) {
+          const { data: exactRows } = await sb.from("pronostics").select("match_id").in("match_id", matchIds).eq("points", 5);
+          (exactRows || []).forEach(r => { exactCounts[r.match_id] = (exactCounts[r.match_id] || 0) + 1; });
+        }
+
         const matchesEl = block.querySelector(".matches");
         (matchs || []).forEach(m => {
           const row = document.createElement("div");
           row.className = "match-row";
           const kickoff = new Date(m.coup_envoi).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+          const exactBadge = exactCounts[m.id] ? ` <span class="code-tag">🎯 ${exactCounts[m.id]}</span>` : "";
           row.innerHTML = `
-            <span class="match-label">${kickoff} — ${teamBadge(m.equipe_domicile, m.logo_domicile)} ${m.equipe_domicile} vs ${teamBadge(m.equipe_exterieur, m.logo_exterieur)} ${m.equipe_exterieur}</span>
+            <span class="match-label">${kickoff} — ${teamBadge(m.equipe_domicile, m.logo_domicile)} ${m.equipe_domicile} vs ${teamBadge(m.equipe_exterieur, m.logo_exterieur)} ${m.equipe_exterieur}${exactBadge}</span>
             <span class="score-edit">
               <input type="number" min="0" value="${m.score_domicile ?? ''}" placeholder="-" />
               <span>-</span>
@@ -308,14 +313,6 @@
           btnSaveRecompense.addEventListener("click", async () => {
             const value = block.querySelector(".input-recompense").value.trim();
             await sb.from("soirees").update({ recompense: value || null }).eq("id", soiree.id);
-            loadSoirees();
-          });
-        }
-
-        const btnResetChoix = block.querySelector(".btn-reset-choix");
-        if (btnResetChoix) {
-          btnResetChoix.addEventListener("click", async () => {
-            await sb.from("soirees").update({ recompense_choix: null, recompense_choisie_at: null }).eq("id", soiree.id);
             loadSoirees();
           });
         }
