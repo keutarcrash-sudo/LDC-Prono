@@ -23,7 +23,7 @@
     --text-muted: #8B96AC;
   }
   * { box-sizing: border-box; }
-  body { font-family: 'Manrope', system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); padding: 48px 40px; }
+  body { font-family: 'Manrope', system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); padding: 48px 40px 100px; }
   h1 {
     font-family: 'Bebas Neue', sans-serif; font-size: 3.4rem; letter-spacing: 1px;
     text-align: center; margin: 0; line-height: 1;
@@ -45,6 +45,28 @@
   .points { text-align: right; font-weight: 800; color: var(--accent-bright); }
   .col.saison .points { color: var(--gold); }
   .empty { color: var(--text-muted); font-style: italic; padding: 24px 0; font-size: 1.1rem; }
+
+  @media (max-width: 600px) {
+    body { padding: 24px 16px 100px; }
+    h1 { font-size: 2rem; }
+    .subtitle { margin-bottom: 24px; font-size: 1rem; }
+    .col { min-width: 0; padding: 16px; }
+    table { font-size: 1.1rem; }
+  }
+
+  .bottom-nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    display: flex; max-width: 480px; margin: 0 auto;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--text-muted); text-decoration: none; font-size: 0.65rem;
+    text-transform: uppercase; letter-spacing: 0.3px; font-weight: 700;
+  }
+  .nav-item.active { color: var(--accent-bright); }
+  .nav-icon { font-size: 1.3rem; }
 </style>
 </head>
 <body>
@@ -61,6 +83,19 @@
       <table id="tableSaison"><tbody></tbody></table>
     </div>
   </div>
+
+  <nav class="bottom-nav">
+    <a href="pronostics.html" class="nav-item" id="navPronostics"><span class="nav-icon">⚽</span><span>Pronostics</span></a>
+    <a href="classement.html" class="nav-item active"><span class="nav-icon">🏆</span><span>Classement</span></a>
+    <a href="profil.html" class="nav-item"><span class="nav-icon">👤</span><span>Profil</span></a>
+  </nav>
+
+  <script>
+    (function () {
+      const lastCode = localStorage.getItem("ldc_last_code");
+      if (lastCode) document.getElementById("navPronostics").href = `pronostics.html?code=${lastCode}`;
+    })();
+  </script>
 
   <script>
     const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
