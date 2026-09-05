@@ -30,6 +30,8 @@ create table matchs (
   external_match_id text,
   equipe_domicile text not null,
   equipe_exterieur text not null,
+  logo_domicile text,
+  logo_exterieur text,
   coup_envoi timestamptz not null,
   score_domicile int,
   score_exterieur int,
@@ -177,3 +179,5 @@ create policy "maj publique pronostics" on pronostics for update using (true);
 alter table soirees add column if not exists recompense text default '1 boisson offerte au choix';
 alter table soirees add column if not exists recompense_choix text;
 alter table soirees add column if not exists recompense_choisie_at timestamptz;
+alter table matchs add column if not exists logo_domicile text;
+alter table matchs add column if not exists logo_exterieur text;

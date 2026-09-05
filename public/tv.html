@@ -47,6 +47,10 @@
   .match-row .score { color: var(--accent-bright); font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; }
   .match-row.finished .score { color: var(--success); }
   .match-row .check { margin-left: 12px; }
+  .match-row .teams-line { display: flex; align-items: center; gap: 14px; }
+  .team-badge { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+  .team-badge img { width: 100%; height: 100%; object-fit: contain; }
+  .team-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; background: linear-gradient(135deg, var(--accent), #0e4f8f); color: white; }
   .podium { display: flex; flex-direction: column; gap: 14px; max-width: 700px; margin: 0 auto; }
   .podium-row {
     display: flex; align-items: center; justify-content: space-between; background: var(--surface);
@@ -105,6 +109,15 @@
     let rotateToggle = false;
     let qrRendered = null;
     let cachedEarliestKickoff = null;
+
+    function teamBadge(name, logoUrl) {
+      const initial = (name || "?").charAt(0).toUpperCase();
+      const fallback = `<span class="team-fallback" style="${logoUrl ? "display:none;" : ""}">${initial}</span>`;
+      const img = logoUrl
+        ? `<img src="${logoUrl}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />`
+        : "";
+      return `<span class="team-badge">${img}${fallback}</span>`;
+    }
 
     function todayStr() {
       const d = new Date();
@@ -176,7 +189,7 @@
         document.getElementById("fermeList").innerHTML = matchs.map(m => {
           const finished = m.score_domicile !== null;
           const score = finished ? `${m.score_domicile} - ${m.score_exterieur}` : "en cours";
-          return `<div class="match-row ${finished ? 'finished' : ''}"><span>${m.equipe_domicile} vs ${m.equipe_exterieur}</span><span class="score">${score}</span></div>`;
+          return `<div class="match-row ${finished ? 'finished' : ''}"><span class="teams-line">${teamBadge(m.equipe_domicile, m.logo_domicile)} ${m.equipe_domicile} vs ${m.equipe_exterieur} ${teamBadge(m.equipe_exterieur, m.logo_exterieur)}</span><span class="score">${score}</span></div>`;
         }).join("");
         showPhase("ferme");
         return;
@@ -187,7 +200,7 @@
       if (rotateToggle) {
         document.getElementById("resultatsList").innerHTML = matchs.map(m => `
           <div class="match-row finished">
-            <span>${m.equipe_domicile} vs ${m.equipe_exterieur}</span>
+            <span class="teams-line">${teamBadge(m.equipe_domicile, m.logo_domicile)} ${m.equipe_domicile} vs ${m.equipe_exterieur} ${teamBadge(m.equipe_exterieur, m.logo_exterieur)}</span>
             <span class="score">${m.score_domicile} - ${m.score_exterieur} <span class="check">✅</span></span>
           </div>
         `).join("");

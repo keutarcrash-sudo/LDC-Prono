@@ -38,6 +38,10 @@
   button.secondary { background: var(--border); color: var(--text); }
   button.secondary:hover { background: #33456b; }
   .match-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 8px; flex-wrap: wrap; }
+  .match-label { display: flex; align-items: center; gap: 6px; }
+  .team-badge { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); vertical-align: middle; }
+  .team-badge img { width: 100%; height: 100%; object-fit: contain; }
+  .team-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 0.7rem; background: linear-gradient(135deg, var(--accent), #0e4f8f); color: white; }
   .match-row:last-child { border-bottom: none; }
   .score-edit { display: flex; align-items: center; gap: 6px; }
   .score-edit input { width: 46px; text-align: center; }
@@ -99,6 +103,15 @@
     const { SUPABASE_URL, SUPABASE_ANON_KEY, SITE_BASE_URL } = window.APP_CONFIG;
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    function teamBadge(name, logoUrl) {
+      const initial = (name || "?").charAt(0).toUpperCase();
+      const fallback = `<span class="team-fallback" style="${logoUrl ? "display:none;" : ""}">${initial}</span>`;
+      const img = logoUrl
+        ? `<img src="${logoUrl}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />`
+        : "";
+      return `<span class="team-badge">${img}${fallback}</span>`;
+    }
+
     function randomCode() {
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
       let out = "";
@@ -144,6 +157,8 @@
             external_match_id: String(m.id),
             equipe_domicile: m.homeTeam?.shortName || m.homeTeam?.name || "?",
             equipe_exterieur: m.awayTeam?.shortName || m.awayTeam?.name || "?",
+            logo_domicile: m.homeTeam?.crest || null,
+            logo_exterieur: m.awayTeam?.crest || null,
             coup_envoi: m.utcDate,
             statut: m.status,
           }));
@@ -258,7 +273,7 @@
           row.className = "match-row";
           const kickoff = new Date(m.coup_envoi).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
           row.innerHTML = `
-            <span>${kickoff} — ${m.equipe_domicile} vs ${m.equipe_exterieur}</span>
+            <span class="match-label">${kickoff} — ${teamBadge(m.equipe_domicile, m.logo_domicile)} ${m.equipe_domicile} vs ${teamBadge(m.equipe_exterieur, m.logo_exterieur)} ${m.equipe_exterieur}</span>
             <span class="score-edit">
               <input type="number" min="0" value="${m.score_domicile ?? ''}" placeholder="-" />
               <span>-</span>
@@ -311,7 +326,7 @@
         row.innerHTML = `
           <div>
             <div class="pending-date">${m.soirees?.label || "Soirée"} — ${kickoff}</div>
-            <div>${m.equipe_domicile} vs ${m.equipe_exterieur}</div>
+            <div class="match-label">${teamBadge(m.equipe_domicile, m.logo_domicile)} ${m.equipe_domicile} vs ${teamBadge(m.equipe_exterieur, m.logo_exterieur)} ${m.equipe_exterieur}</div>
           </div>
           <span class="score-edit">
             <input type="number" min="0" placeholder="-" />
