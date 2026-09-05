@@ -48,24 +48,50 @@
   .soiree-block { margin-top: 24px; }
   .link-box { font-size: 0.85rem; word-break: break-all; color: var(--text-muted); margin-top: 8px; }
   .code-tag { color: var(--gold); font-weight: 800; }
+
+  .tabbar { display: flex; gap: 8px; margin: 18px 0 24px; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    background: transparent; color: var(--text-muted); border: none; margin: 0;
+    padding: 10px 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem;
+    border-bottom: 3px solid transparent; border-radius: 0; cursor: pointer;
+  }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab-btn .count { display: inline-block; background: var(--gold); color: var(--bg); border-radius: 999px; font-size: 0.7rem; padding: 1px 7px; margin-left: 6px; }
+  [hidden] { display: none !important; }
+  .pending-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 8px; flex-wrap: wrap; }
+  .pending-row:last-child { border-bottom: none; }
+  .pending-date { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; }
 </style>
 </head>
 <body>
   <h1>⚙️ Admin — Predicto Arena 18</h1>
   <p style="color:var(--text-muted); font-size:0.9rem;">Ne partage ce lien qu'avec l'équipe de l'Arena. Il permet de créer les soirées et de modifier les résultats.</p>
 
-  <div class="card">
-    <h2 style="margin-top:0; border:none; padding-top:0;">Créer une soirée</h2>
-    <label for="date">Date de la soirée</label>
-    <input type="date" id="date" />
-    <label for="label">Nom de la soirée (optionnel)</label>
-    <input type="text" id="label" placeholder="ex: Soirée Journée 3" />
-    <button id="btnCreate">Créer la soirée et importer les matchs</button>
-    <div id="createMsg"></div>
+  <div class="tabbar">
+    <button type="button" class="tab-btn active" data-tab="soirees">Soirées</button>
+    <button type="button" class="tab-btn" data-tab="resultats">Résultats à saisir <span class="count" id="pendingCount" hidden>0</span></button>
   </div>
 
-  <h2>Soirées existantes</h2>
-  <div id="soireesList"></div>
+  <section id="tab-soirees">
+    <div class="card">
+      <h2 style="margin-top:0; border:none; padding-top:0;">Créer une soirée</h2>
+      <label for="date">Date de la soirée</label>
+      <input type="date" id="date" />
+      <label for="label">Nom de la soirée (optionnel)</label>
+      <input type="text" id="label" placeholder="ex: Soirée Journée 3" />
+      <button id="btnCreate">Créer la soirée et importer les matchs</button>
+      <div id="createMsg"></div>
+    </div>
+
+    <h2>Soirées existantes</h2>
+    <div id="soireesList"></div>
+  </section>
+
+  <section id="tab-resultats" hidden>
+    <h2 style="margin-top:0; border:none; padding-top:0;">Matchs sans résultat</h2>
+    <p style="color:var(--text-muted); font-size:0.85rem;">Vue rapide de tous les matchs (toutes soirées) qui attendent encore un score final.</p>
+    <div class="card" id="pendingList"></div>
+  </section>
 
   <script>
     const { SUPABASE_URL, SUPABASE_ANON_KEY, SITE_BASE_URL } = window.APP_CONFIG;
@@ -163,8 +189,9 @@
       const h = parseInt(homeVal, 10), a = parseInt(awayVal, 10);
       if (Number.isNaN(h) || Number.isNaN(a)) { showMsg(msgEl, "Scores invalides.", false); return; }
       const { error } = await sb.from("matchs").update({ score_domicile: h, score_exterieur: a, statut: "FINISHED" }).eq("id", matchId);
-      if (error) showMsg(msgEl, "Erreur : " + error.message, false);
-      else showMsg(msgEl, "Score enregistré, points recalculés.", true);
+      if (error) { showMsg(msgEl, "Erreur : " + error.message, false); return; }
+      showMsg(msgEl, "Score enregistré, points recalculés.", true);
+      loadPendingResults();
     }
 
     async function addManualMatch(soireeId, home, away, kickoffLocal, msgEl) {
@@ -247,7 +274,64 @@
       }
     }
 
+    async function loadPendingResults() {
+      const listEl = document.getElementById("pendingList");
+      const countEl = document.getElementById("pendingCount");
+      const { data, error } = await sb
+        .from("matchs")
+        .select("*, soirees(date, label)")
+        .is("score_domicile", null)
+        .order("coup_envoi");
+
+      if (error) { listEl.innerHTML = `<div class="msg err">Erreur : ${error.message}</div>`; return; }
+
+      if (!data || data.length === 0) {
+        countEl.hidden = true;
+        listEl.innerHTML = `<p style="color:var(--text-muted);">Tout est à jour, aucun résultat en attente.</p>`;
+        return;
+      }
+
+      countEl.hidden = false;
+      countEl.textContent = data.length;
+      listEl.innerHTML = "";
+      data.forEach(m => {
+        const kickoff = new Date(m.coup_envoi).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+        const row = document.createElement("div");
+        row.className = "pending-row";
+        row.innerHTML = `
+          <div>
+            <div class="pending-date">${m.soirees?.label || "Soirée"} — ${kickoff}</div>
+            <div>${m.equipe_domicile} vs ${m.equipe_exterieur}</div>
+          </div>
+          <span class="score-edit">
+            <input type="number" min="0" placeholder="-" />
+            <span>-</span>
+            <input type="number" min="0" placeholder="-" />
+            <button class="secondary btn-save-score">Enregistrer</button>
+          </span>
+        `;
+        const inputs = row.querySelectorAll("input");
+        const msgHolder = document.createElement("div");
+        row.appendChild(msgHolder);
+        row.querySelector(".btn-save-score").addEventListener("click", () => {
+          saveManualScore(m.id, inputs[0].value, inputs[1].value, msgHolder).then(loadSoirees);
+        });
+        listEl.appendChild(row);
+      });
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-soirees").hidden = btn.dataset.tab !== "soirees";
+        document.getElementById("tab-resultats").hidden = btn.dataset.tab !== "resultats";
+        if (btn.dataset.tab === "resultats") loadPendingResults();
+      });
+    });
+
     loadSoirees();
+    loadPendingResults();
   </script>
 </body>
 </html>
