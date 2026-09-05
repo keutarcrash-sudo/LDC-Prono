@@ -4,8 +4,8 @@
 // ============================================================
 window.APP_CONFIG = {
   // Projet Settings > API dans Supabase
-  SUPABASE_URL: "https://VOTRE-PROJET.supabase.co",
-  SUPABASE_ANON_KEY: "VOTRE_CLE_ANON_PUBLIQUE",
+  SUPABASE_URL: "https://vgpuykjrszofugygwnes.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_VMhcMGQIaG8sv37Cq7Q3Xw_zyaalM1z",
 
   // Clé API gratuite sur https://www.football-data.org
   FOOTBALL_DATA_API_KEY: "VOTRE_CLE_FOOTBALL_DATA",
