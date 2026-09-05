@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Predicto — Arena 18</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0F1C;
+    --surface: #15223B;
+    --border: #253758;
+    --accent: #1E90FF;
+    --gold: #FFD600;
+    --text: #FFFFFF;
+    --text-muted: #8B96AC;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Manrope', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; margin: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.6rem; letter-spacing: 1px; margin: 0 0 4px; text-align: center; }
+  .subtitle { color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; margin-bottom: 32px; }
+  .links { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 320px; }
+  a.link-card {
+    display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px; color: var(--text); text-decoration: none; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.3px; text-align: center; transition: border-color 0.2s;
+  }
+  a.link-card:hover { border-color: var(--accent); }
+  a.link-card.gold:hover { border-color: var(--gold); }
+</style>
+</head>
+<body>
+  <h1>🏆 Predicto</h1>
+  <div class="subtitle">Ligue des Champions — Arena 18</div>
+  <div class="links">
+    <a class="link-card" href="admin.html">⚙️ Admin (staff)</a>
+    <a class="link-card gold" href="classement.html">📺 Écran classement</a>
+  </div>
+</body>
+</html>
