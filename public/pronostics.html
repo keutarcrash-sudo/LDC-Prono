@@ -3,38 +3,76 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pronostics — Ligue des Champions</title>
+<title>Pronostics — Arena 18</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #0A0F1C;
+    --surface: #15223B;
+    --surface-2: #1B2C4C;
+    --border: #253758;
+    --accent: #1E90FF;
+    --accent-bright: #00F0FF;
+    --gold: #FFD600;
+    --success: #00E6A1;
+    --danger: #FF5C6C;
+    --closed: #7C6CE0;
+    --text: #FFFFFF;
+    --text-muted: #8B96AC;
+  }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px 16px 60px; background: #0e1116; color: #eaeef2; }
-  h1 { font-size: 1.3rem; text-align: center; }
-  .card { background: #161b22; border: 1px solid #2a2f3a; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
-  label { display: block; margin: 10px 0 4px; font-size: 0.9rem; color: #9aa4b2; }
-  input, button { font-size: 1rem; padding: 10px; border-radius: 6px; border: 1px solid #2a2f3a; width: 100%; }
-  input { background: #0e1116; color: #eaeef2; }
-  button { background: #3b82f6; color: white; border: none; cursor: pointer; margin-top: 16px; font-weight: 600; }
-  button:hover { background: #2563eb; }
-  .match-card { margin-bottom: 12px; }
-  .teams { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px; }
-  .kickoff { color: #9aa4b2; font-size: 0.8rem; margin-bottom: 10px; }
-  .score-inputs { display: flex; align-items: center; justify-content: center; gap: 10px; }
-  .score-inputs input { width: 64px; text-align: center; font-size: 1.3rem; }
-  .closed { opacity: 0.5; }
-  .badge { display: inline-block; font-size: 0.75rem; background: #2a2f3a; color: #9aa4b2; padding: 2px 8px; border-radius: 999px; }
-  .msg { padding: 12px; border-radius: 6px; margin-top: 10px; font-size: 0.9rem; text-align: center; }
-  .msg.ok { background: #14361f; color: #7ee08a; }
-  .msg.err { background: #3a1414; color: #ff8a8a; }
+  body {
+    font-family: 'Manrope', system-ui, sans-serif;
+    max-width: 480px; margin: 0 auto; padding: 24px 16px 60px;
+    background: var(--bg); color: var(--text);
+  }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem; letter-spacing: 0.5px; text-align: center; margin: 4px 0 0;
+    line-height: 1.05;
+  }
+  .subtitle { text-align: center; color: var(--text-muted); font-size: 0.85rem; margin: 6px 0 24px; text-transform: uppercase; letter-spacing: 1px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  label { display: block; margin: 12px 0 5px; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+  input, button { font-size: 1rem; padding: 12px; border-radius: 8px; border: 1px solid var(--border); width: 100%; font-family: inherit; }
+  input { background: var(--bg); color: var(--text); }
+  input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  button { background: var(--accent); color: white; border: none; cursor: pointer; margin-top: 18px; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; text-transform: uppercase; padding: 14px; }
+  button:hover { background: #1678d6; }
+  button:active { transform: scale(0.99); }
+  .hint { color: var(--text-muted); font-size: 0.78rem; margin-top: 6px; }
+  .match-card { margin-bottom: 12px; border-left: 3px solid var(--accent); transition: border-color 0.3s, opacity 0.3s; }
+  .match-card.closing { border-left-color: var(--gold); }
+  .match-card.closed { border-left-color: var(--closed); opacity: 0.55; }
+  .teams { display: flex; justify-content: space-between; align-items: center; font-weight: 800; margin-bottom: 8px; font-size: 1.05rem; }
+  .teams span:nth-child(2) { color: var(--text-muted); font-weight: 500; font-size: 0.85rem; }
+  .match-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .kickoff { color: var(--text-muted); font-size: 0.8rem; }
+  .state-badge { display: inline-block; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: rgba(30,144,255,0.15); color: var(--accent-bright); }
+  .state-badge.closing { background: rgba(255,214,0,0.15); color: var(--gold); }
+  .state-badge.closed { background: rgba(124,108,224,0.18); color: var(--closed); }
+  .score-inputs { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .score-inputs input { width: 68px; text-align: center; font-size: 1.5rem; font-weight: 800; padding: 10px; }
+  .score-inputs span { color: var(--text-muted); font-weight: 800; font-size: 1.2rem; }
+  .msg { padding: 14px; border-radius: 10px; margin-top: 12px; font-size: 0.95rem; text-align: center; font-weight: 700; }
+  .msg.ok { background: rgba(0,230,161,0.15); color: var(--success); }
+  .msg.err { background: rgba(255,92,108,0.15); color: var(--danger); }
   #app { display: none; }
+  #invalidCode h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 1px; color: var(--closed); margin: 0 0 8px; }
 </style>
 </head>
 <body>
-  <h1>⚽ Pronostics — Ligue des Champions</h1>
+  <h1>⚽ Prono. Grimpe au classement.</h1>
+  <div class="subtitle">Ligue des Champions — Arena 18</div>
 
   <div id="invalidCode" class="card" style="display:none; text-align:center;">
-    <p>QR code invalide ou expiré.</p>
-    <p style="color:#9aa4b2; font-size:0.9rem;">Merci de scanner le QR code affiché ce soir à l'Arena pour pronostiquer les matchs de la soirée.</p>
+    <h2>QR expiré</h2>
+    <p>Ce lien n'est plus valable.</p>
+    <p class="hint">Scanne le QR code affiché ce soir à l'Arena 18 pour pronostiquer les matchs de la soirée.</p>
   </div>
 
   <div id="loading" class="card" style="text-align:center;">Chargement…</div>
@@ -43,14 +81,14 @@
     <div class="card" id="identityCard">
       <label for="pseudo">Ton pseudo</label>
       <input type="text" id="pseudo" placeholder="ex: Julien" maxlength="30" />
-      <label for="phone">Ton numéro de téléphone</label>
+      <label for="phone">Ton téléphone</label>
       <input type="tel" id="phone" placeholder="ex: 0612345678" />
-      <p style="color:#9aa4b2; font-size:0.8rem;">Le téléphone sert juste à te reconnaître d'une soirée à l'autre pour le classement de la saison.</p>
+      <p class="hint">Ça sert juste à te retrouver au classement de la saison, d'une soirée à l'autre.</p>
     </div>
 
     <div id="matchesContainer"></div>
 
-    <button id="btnSubmit">Enregistrer mes pronostics</button>
+    <button id="btnSubmit">Je valide mes pronos</button>
     <div id="submitMsg"></div>
   </div>
 
@@ -60,6 +98,8 @@
 
     const params = new URLSearchParams(window.location.search);
     const code = (params.get("code") || "").toUpperCase().trim();
+
+    const CLOSING_SOON_MS = 15 * 60 * 1000; // "bientôt fermé" dans les 15 dernières minutes
 
     let soiree = null;
     let matchs = [];
@@ -72,6 +112,13 @@
 
     function showMsg(el, text, ok) {
       el.innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
+    }
+
+    function formatCountdown(ms) {
+      const totalSec = Math.max(0, Math.floor(ms / 1000));
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     }
 
     async function init() {
@@ -96,6 +143,8 @@
       if (savedPhone) document.getElementById("phone").value = savedPhone;
 
       renderMatches();
+      updateMatchStates();
+      setInterval(updateMatchStates, 1000);
 
       if (savedPhone) {
         await loadExistingPronostics(savedPhone);
@@ -110,22 +159,54 @@
     function renderMatches() {
       const container = document.getElementById("matchesContainer");
       container.innerHTML = "";
-      const now = new Date();
       matchs.forEach(m => {
         const kickoff = new Date(m.coup_envoi);
-        const isClosed = now >= kickoff;
         const card = document.createElement("div");
-        card.className = "card match-card" + (isClosed ? " closed" : "");
+        card.className = "card match-card";
+        card.dataset.matchId = m.id;
         card.innerHTML = `
           <div class="teams"><span>${m.equipe_domicile}</span><span>vs</span><span>${m.equipe_exterieur}</span></div>
-          <div class="kickoff">${kickoff.toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit" })} ${isClosed ? '<span class="badge">Clôturé</span>' : ''}</div>
+          <div class="match-meta">
+            <span class="kickoff">${kickoff.toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
+            <span class="state-badge" data-badge="${m.id}">Ouvert</span>
+          </div>
           <div class="score-inputs">
-            <input type="number" min="0" max="20" data-match="${m.id}" data-side="home" ${isClosed ? "disabled" : ""} />
+            <input type="number" min="0" max="20" data-match="${m.id}" data-side="home" />
             <span>-</span>
-            <input type="number" min="0" max="20" data-match="${m.id}" data-side="away" ${isClosed ? "disabled" : ""} />
+            <input type="number" min="0" max="20" data-match="${m.id}" data-side="away" />
           </div>
         `;
         container.appendChild(card);
+      });
+    }
+
+    function updateMatchStates() {
+      const now = new Date();
+      matchs.forEach(m => {
+        const kickoff = new Date(m.coup_envoi);
+        const remaining = kickoff - now;
+        const card = document.querySelector(`.match-card[data-match-id="${m.id}"]`);
+        const badge = document.querySelector(`[data-badge="${m.id}"]`);
+        const homeInput = document.querySelector(`input[data-match="${m.id}"][data-side="home"]`);
+        const awayInput = document.querySelector(`input[data-match="${m.id}"][data-side="away"]`);
+        if (!card || !badge) return;
+
+        card.classList.remove("closing", "closed");
+        badge.classList.remove("closing", "closed");
+
+        if (remaining <= 0) {
+          card.classList.add("closed");
+          badge.classList.add("closed");
+          badge.textContent = "Fermé";
+          if (homeInput) homeInput.disabled = true;
+          if (awayInput) awayInput.disabled = true;
+        } else if (remaining <= CLOSING_SOON_MS) {
+          card.classList.add("closing");
+          badge.classList.add("closing");
+          badge.textContent = `⏱ ${formatCountdown(remaining)}`;
+        } else {
+          badge.textContent = "Ouvert";
+        }
       });
     }
 
@@ -149,7 +230,7 @@
       const pseudo = document.getElementById("pseudo").value.trim();
       const phone = document.getElementById("phone").value.trim();
 
-      if (!pseudo || !phone) { showMsg(msgEl, "Merci de renseigner ton pseudo et ton téléphone.", false); return; }
+      if (!pseudo || !phone) { showMsg(msgEl, "Pseudo + téléphone obligatoires pour jouer.", false); return; }
 
       try {
         let { data: joueur } = await sb.from("joueurs").select("*").eq("phone", phone).maybeSingle();
@@ -183,12 +264,12 @@
           });
         }
 
-        if (rows.length === 0) { showMsg(msgEl, "Renseigne au moins un pronostic avant d'envoyer.", false); return; }
+        if (rows.length === 0) { showMsg(msgEl, "Renseigne au moins un prono avant d'envoyer.", false); return; }
 
         const { error: pErr } = await sb.from("pronostics").upsert(rows, { onConflict: "joueur_id,match_id" });
         if (pErr) throw pErr;
 
-        showMsg(msgEl, `Pronostics enregistrés pour ${rows.length} match(s). Bonne soirée à l'Arena !`, true);
+        showMsg(msgEl, `🔥 Pronos enregistrés pour ${rows.length} match(s) ! Rendez-vous au classement.`, true);
       } catch (e) {
         showMsg(msgEl, "Erreur : " + e.message, false);
       }
