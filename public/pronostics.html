@@ -106,8 +106,13 @@
     let joueurId = localStorage.getItem("ldc_joueur_id") || null;
 
     function todayStr() {
+      // Date locale (pas UTC) pour matcher la date choisie dans admin.html,
+      // qui vient d'un <input type="date"> toujours exprimé en heure locale.
       const d = new Date();
-      return d.toISOString().slice(0, 10);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
     }
 
     function showMsg(el, text, ok) {
