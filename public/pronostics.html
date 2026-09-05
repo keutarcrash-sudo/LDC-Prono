@@ -27,28 +27,63 @@
   * { box-sizing: border-box; }
   body {
     font-family: 'Manrope', system-ui, sans-serif;
-    max-width: 480px; margin: 0 auto; padding: 20px 16px 60px;
-    background: var(--bg); color: var(--text); min-height: 100vh;
+    max-width: 480px; margin: 0 auto; padding: 0 16px 60px;
+    background:
+      radial-gradient(ellipse 800px 500px at 50% -10%, rgba(30,144,255,0.18), transparent),
+      var(--bg);
+    color: var(--text); min-height: 100vh;
   }
-  .brand { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px; }
-  .brand h1 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 1px; margin: 0; }
+
+  .brand { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 24px 0 4px; }
+  .brand img { height: 34px; width: auto; }
+  .brand img[data-broken] { display: none; }
+  .brand h1 { font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; letter-spacing: 1px; margin: 0; }
   .subtitle { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin: 0 0 20px; text-transform: uppercase; letter-spacing: 1px; }
 
-  .steps { display: flex; justify-content: center; gap: 6px; margin-bottom: 22px; }
-  .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.3s, width 0.3s; }
-  .step-dot.active { background: var(--accent-bright); width: 22px; border-radius: 4px; }
-  .step-dot.done { background: var(--success); }
+  .steps { display: flex; justify-content: center; align-items: center; gap: 4px; margin-bottom: 22px; }
+  .step-node { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 74px; }
+  .step-circle {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; transition: all 0.3s;
+  }
+  .step-node.active .step-circle { background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 0 0 4px rgba(30,144,255,0.2); }
+  .step-node.done .step-circle { background: var(--success); border-color: var(--success); color: var(--bg); }
+  .step-label { font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; text-align: center; }
+  .step-node.active .step-label { color: var(--text); font-weight: 700; }
+  .step-line { flex: 1; height: 2px; background: var(--border); margin-bottom: 18px; max-width: 30px; }
+
+  .hero-banner {
+    height: 120px; border-radius: 16px; margin-bottom: 14px; position: relative; overflow: hidden;
+    background-image: url('assets/hero-bg.jpg'), linear-gradient(135deg, #1B2C4C, #0A0F1C 70%);
+    background-size: cover; background-position: center;
+    display: flex; align-items: flex-end; padding: 14px 18px;
+    border: 1px solid var(--border);
+  }
+  .hero-banner::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(0deg, rgba(10,15,28,0.85) 10%, rgba(10,15,28,0.1) 80%);
+  }
+  .hero-banner span { position: relative; z-index: 1; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.5px; }
+
+  .reward-banner {
+    display: flex; align-items: center; gap: 10px; background: linear-gradient(90deg, rgba(255,214,0,0.14), rgba(255,214,0,0.03));
+    border: 1px solid rgba(255,214,0,0.35); border-radius: 12px; padding: 12px 16px; margin-bottom: 14px;
+  }
+  .reward-banner .icon { font-size: 1.5rem; }
+  .reward-banner .txt { font-size: 0.85rem; }
+  .reward-banner b { color: var(--gold); }
 
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
   label { display: block; margin: 12px 0 5px; font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
   input, button { font-size: 1rem; padding: 12px; border-radius: 8px; border: 1px solid var(--border); width: 100%; font-family: inherit; }
   input { background: var(--bg); color: var(--text); }
   input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
-  button { background: var(--accent); color: white; border: none; cursor: pointer; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; text-transform: uppercase; padding: 14px; }
+  button { background: var(--accent); color: white; border: none; cursor: pointer; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; text-transform: uppercase; padding: 14px; transition: transform 0.1s, background 0.2s; }
   button:hover { background: #1678d6; }
-  button:active { transform: scale(0.99); }
+  button:active { transform: scale(0.98); }
   button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); margin-top: 10px; }
-  button.ghost:hover { background: var(--surface-2); }
+  button.ghost:hover { background: var(--surface-2); color: var(--text); }
   .hint { color: var(--text-muted); font-size: 0.78rem; margin-top: 6px; }
 
   .checkbox-row { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; }
@@ -81,25 +116,34 @@
   .msg.ok { background: rgba(0,230,161,0.15); color: var(--success); }
   .msg.err { background: rgba(255,92,108,0.15); color: var(--danger); }
 
-  .confirm-icon { font-size: 3.5rem; text-align: center; margin-bottom: 8px; }
-  .confirm-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; text-align: center; letter-spacing: 0.5px; color: var(--success); margin: 0 0 6px; }
+  @keyframes pop-in { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+  .confirm-icon { font-size: 4rem; text-align: center; margin-bottom: 8px; animation: pop-in 0.5s ease-out; }
+  .confirm-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.9rem; text-align: center; letter-spacing: 0.5px; color: var(--success); margin: 0 0 6px; }
   .confirm-sub { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; }
-  .share-row { display: flex; gap: 10px; }
-  .share-row button { flex: 1; }
+  .share-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .share-row button { flex: 1; min-width: 130px; }
 
   #screen-invalid h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 1px; color: var(--closed); margin: 0 0 8px; }
+
+  section { animation: fade-in 0.35s ease; }
+  @keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-  <div class="brand"><span>⚽</span><h1>PREDICTO</h1></div>
+  <div class="brand">
+    <img src="assets/logo.png" alt="" onerror="this.setAttribute('data-broken','')" />
+    <h1>⚽ PREDICTO</h1>
+  </div>
   <div class="subtitle">Ligue des Champions — Arena 18</div>
 
   <div class="steps" id="steps">
-    <div class="step-dot" data-step="welcome"></div>
-    <div class="step-dot" data-step="pronostics"></div>
-    <div class="step-dot" data-step="confirm"></div>
+    <div class="step-node" data-step="welcome"><div class="step-circle">1</div><div class="step-label">Bienvenue</div></div>
+    <div class="step-line"></div>
+    <div class="step-node" data-step="pronostics"><div class="step-circle">2</div><div class="step-label">Pronostics</div></div>
+    <div class="step-line"></div>
+    <div class="step-node" data-step="confirm"><div class="step-circle">3</div><div class="step-label">Confirmation</div></div>
   </div>
 
   <div id="screen-invalid" class="card" hidden style="text-align:center;">
@@ -111,6 +155,11 @@
   <div id="screen-loading" class="card" style="text-align:center;">Chargement…</div>
 
   <section id="screen-welcome" hidden>
+    <div class="hero-banner"><span id="heroLabel">Soirée Ligue des Champions</span></div>
+    <div class="reward-banner" id="rewardBanner" hidden>
+      <span class="icon">🏆</span>
+      <span class="txt">À gagner ce soir : <b id="rewardText"></b></span>
+    </div>
     <div class="card">
       <h2 style="font-family:'Bebas Neue',sans-serif; letter-spacing:0.5px; margin:0 0 4px; font-size:1.4rem;" id="welcomeTitle">Bienvenue à l'Arena 18</h2>
       <p class="hint" id="welcomeSubtitle">Entre ton pseudo et ton numéro pour commencer.</p>
@@ -138,9 +187,14 @@
       <div class="confirm-icon">✅</div>
       <div class="confirm-title">Pronostics enregistrés !</div>
       <div class="confirm-sub" id="confirmSub">Bonne soirée à l'Arena 18.</div>
+      <div class="reward-banner" id="rewardBannerConfirm" hidden>
+        <span class="icon">🏆</span>
+        <span class="txt">À gagner ce soir : <b id="rewardTextConfirm"></b></span>
+      </div>
       <div class="share-row">
         <button id="btnShare">📤 Partager</button>
-        <button class="ghost" id="btnClassement">🏆 Classement</button>
+        <button class="ghost" id="btnProfil">👤 Mon profil</button>
+        <button class="ghost" id="btnClassement">📊 Classement</button>
       </div>
     </div>
   </section>
@@ -182,12 +236,12 @@
       ["welcome", "pronostics", "confirm"].forEach(s => {
         document.getElementById(`screen-${s}`).hidden = (s !== name);
       });
-      document.querySelectorAll(".step-dot").forEach(dot => {
-        const order = ["welcome", "pronostics", "confirm"];
-        const dotIdx = order.indexOf(dot.dataset.step);
-        const curIdx = order.indexOf(name);
-        dot.classList.toggle("active", dotIdx === curIdx);
-        dot.classList.toggle("done", dotIdx < curIdx);
+      const order = ["welcome", "pronostics", "confirm"];
+      const curIdx = order.indexOf(name);
+      document.querySelectorAll(".step-node").forEach(node => {
+        const idx = order.indexOf(node.dataset.step);
+        node.classList.toggle("active", idx === curIdx);
+        node.classList.toggle("done", idx < curIdx);
       });
     }
 
@@ -205,6 +259,14 @@
 
       document.getElementById("screen-loading").hidden = true;
       document.getElementById("welcomeTitle").textContent = soiree.label || `Soirée du ${soiree.date}`;
+      document.getElementById("heroLabel").textContent = soiree.label || `Soirée du ${soiree.date}`;
+
+      if (soiree.recompense) {
+        document.getElementById("rewardText").textContent = soiree.recompense;
+        document.getElementById("rewardBanner").hidden = false;
+        document.getElementById("rewardTextConfirm").textContent = soiree.recompense;
+        document.getElementById("rewardBannerConfirm").hidden = false;
+      }
 
       const savedPseudo = localStorage.getItem("ldc_pseudo");
       const savedPhone = localStorage.getItem("ldc_phone");
@@ -401,6 +463,9 @@
 
     document.getElementById("btnClassement").addEventListener("click", () => {
       window.location.href = "classement.html";
+    });
+    document.getElementById("btnProfil").addEventListener("click", () => {
+      window.location.href = "profil.html";
     });
 
     init();

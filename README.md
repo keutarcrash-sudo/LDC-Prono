@@ -14,6 +14,11 @@ ex: une bière) + classement cumulé de la saison (lot final).
   cible.
 - `public/classement.html` — écran à projeter dans l'Arena (classement du
   soir + classement saison), s'actualise tout seul toutes les 20 secondes.
+- `public/tv.html` — écran de diffusion automatique pour la TV de l'Arena
+  (avant-match, fermé, résultats, classement — tourne tout seul).
+- `public/profil.html` — page joueur : retrouver son classement saison, et
+  si on est 1er de la soirée, choisir sa récompense (boisson) puis afficher
+  le coupon à montrer au comptoir.
 - `public/config.js` — **généré automatiquement par Vercel** à chaque
   déploiement (voir `build-config.js`) à partir des variables d'environnement
   ci-dessous. Ne pas l'éditer ni le committer (il est dans `.gitignore`).
@@ -91,6 +96,29 @@ Vercel redéploiera automatiquement.
 6. Annonce le gagnant de la soirée depuis `classement.html`. Le classement
    saison continue de cumuler d'une soirée à l'autre (identifié par numéro
    de téléphone).
+
+## Récompense de la soirée
+
+Le gagnant de la soirée (1er au classement du soir) choisit sa récompense
+sur `profil.html` parmi 3 catégories fixes : demi de bière blonde, soft au
+choix (hors energy drink), ou verre de vin au choix. Une fois choisie, elle
+ne peut plus être changée (évite les allers-retours). Le joueur montre
+ensuite le coupon affiché sur cette même page au comptoir : il contient une
+horloge qui défile en direct, pour repérer immédiatement une capture
+d'écran (qui, elle, reste figée sur une heure fixe).
+
+## Images (à ajouter dans `public/assets/`)
+
+Les pages prévoient déjà les emplacements ; tant que les fichiers n'existent
+pas, elles retombent proprement sur les dégradés/icônes actuels (aucune
+image cassée visible). Dépose simplement ces fichiers avec ces noms exacts
+dans `public/assets/` pour qu'ils apparaissent automatiquement :
+
+| Fichier | Utilisé sur | Format conseillé |
+|---|---|---|
+| `assets/logo.png` | En-tête de `pronostics.html` et `profil.html` | PNG transparent, ~120x120px |
+| `assets/hero-bg.jpg` | Bandeau d'ambiance sur l'écran "Bienvenue" de `pronostics.html` | JPG paysage, ~1000x600px, sombre de préférence (du texte blanc est affiché par-dessus) |
+| `assets/avatar-default.png` | Avatar par défaut sur `profil.html` | PNG carré, ~200x200px |
 
 ## Barème de points (modifiable dans `supabase/schema.sql`)
 

@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mon profil — Predicto</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0F1C;
+    --surface: #15223B;
+    --surface-2: #1B2C4C;
+    --border: #253758;
+    --accent: #1E90FF;
+    --accent-bright: #00F0FF;
+    --gold: #FFD600;
+    --success: #00E6A1;
+    --danger: #FF5C6C;
+    --text: #FFFFFF;
+    --text-muted: #8B96AC;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Manrope', system-ui, sans-serif;
+    max-width: 480px; margin: 0 auto; padding: 24px 16px 60px;
+    background: radial-gradient(ellipse 800px 500px at 50% -10%, rgba(30,144,255,0.18), transparent), var(--bg);
+    color: var(--text); min-height: 100vh;
+  }
+  .brand { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px; }
+  .brand img { height: 30px; }
+  .brand img[data-broken] { display: none; }
+  .brand h1 { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; margin: 0; }
+  .subtitle { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin: 0 0 22px; text-transform: uppercase; letter-spacing: 1px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+  label { display: block; margin: 12px 0 5px; font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+  input, button { font-size: 1rem; padding: 12px; border-radius: 8px; border: 1px solid var(--border); width: 100%; font-family: inherit; }
+  input { background: var(--bg); color: var(--text); }
+  input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  button { background: var(--accent); color: white; border: none; cursor: pointer; font-weight: 800; font-size: 1rem; letter-spacing: 0.5px; text-transform: uppercase; padding: 13px; }
+  button:hover { background: #1678d6; }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  .hint { color: var(--text-muted); font-size: 0.78rem; margin-top: 6px; }
+  .msg { padding: 12px; border-radius: 10px; margin-top: 10px; font-size: 0.9rem; text-align: center; font-weight: 700; }
+  .msg.err { background: rgba(255,92,108,0.15); color: var(--danger); }
+
+  .profile-header { display: flex; align-items: center; gap: 16px; }
+  .avatar {
+    width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: white;
+    background: linear-gradient(135deg, var(--accent), #0e4f8f);
+    overflow: hidden;
+  }
+  .avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .avatar img[data-broken] { display: none; }
+  .profile-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.5px; }
+  .profile-sub { color: var(--text-muted); font-size: 0.85rem; }
+
+  .stats-row { display: flex; gap: 10px; margin-top: 18px; }
+  .stat-box { flex: 1; background: var(--surface-2); border-radius: 12px; padding: 14px 10px; text-align: center; }
+  .stat-box .val { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; color: var(--gold); line-height: 1; }
+  .stat-box .lbl { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 4px; }
+
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 0.5px; margin: 0 0 10px; }
+
+  .choice-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .choice-btn {
+    display: flex; align-items: center; gap: 12px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; text-align: left; text-transform: none; font-weight: 700; font-size: 0.95rem;
+  }
+  .choice-btn:hover { border-color: var(--accent); background: #203a63; }
+  .choice-btn .emoji { font-size: 1.6rem; }
+  .choice-sub { font-weight: 500; font-size: 0.78rem; color: var(--text-muted); display: block; }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,214,0,0.35); }
+    50% { box-shadow: 0 0 0 10px rgba(255,214,0,0); }
+  }
+  .coupon {
+    border: 2px solid var(--gold); border-radius: 16px; padding: 22px; text-align: center;
+    background: linear-gradient(180deg, rgba(255,214,0,0.08), transparent);
+    animation: pulse-border 2.2s infinite;
+  }
+  .coupon .trophy { font-size: 2.6rem; }
+  .coupon .title { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: var(--gold); letter-spacing: 0.5px; margin: 4px 0; }
+  .coupon .reward-name { font-size: 1.1rem; font-weight: 800; margin: 8px 0 4px; }
+  .coupon .live-clock { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 2px; margin: 12px 0 4px; color: var(--accent-bright); }
+  .coupon .live-date { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .coupon .warn { font-size: 0.75rem; color: var(--text-muted); margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 12px; }
+
+  .rank-line { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .rank-line:last-child { border-bottom: none; }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="brand">
+    <img src="assets/logo.png" alt="" onerror="this.setAttribute('data-broken','')" />
+    <h1>⚽ PREDICTO</h1>
+  </div>
+  <div class="subtitle">Mon profil</div>
+
+  <div id="screen-lookup" class="card">
+    <p class="hint" style="margin-top:0;">Entre ton numéro pour retrouver ton profil.</p>
+    <label for="phone">Ton téléphone</label>
+    <input type="tel" id="phone" placeholder="ex: 0612345678" />
+    <button id="btnLookup" style="margin-top:14px;">Voir mon profil</button>
+    <div id="lookupMsg"></div>
+  </div>
+
+  <div id="screen-profile" hidden>
+    <div class="card">
+      <div class="profile-header">
+        <div class="avatar" id="avatar">
+          <img src="assets/avatar-default.png" alt="" onerror="this.setAttribute('data-broken','')" />
+          <span id="avatarInitial"></span>
+        </div>
+        <div>
+          <div class="profile-name" id="profilePseudo"></div>
+          <div class="profile-sub">Joueur Predicto — Arena 18</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="val" id="statRank">–</div><div class="lbl">Rang saison</div></div>
+        <div class="stat-box"><div class="val" id="statPoints">0</div><div class="lbl">Points saison</div></div>
+        <div class="stat-box"><div class="val" id="statSoirees">0</div><div class="lbl">Soirées jouées</div></div>
+      </div>
+    </div>
+
+    <div class="card" id="tonightCard" hidden>
+      <div class="section-title" id="tonightTitle">Ce soir</div>
+      <div id="tonightBody"></div>
+    </div>
+
+    <button class="ghost" id="btnChangePhone">🔄 Changer de numéro</button>
+  </div>
+
+  <script>
+    const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const REWARD_LABELS = {
+      biere: "🍺 Demi de bière blonde",
+      soft: "🥤 Soft au choix (hors energy drink)",
+      vin: "🍷 Verre de vin au choix",
+    };
+
+    let joueur = null;
+    let couponInterval = null;
+
+    function todayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function showMsg(el, text) {
+      el.innerHTML = `<div class="msg err">${text}</div>`;
+    }
+
+    function avatarColor(seed) {
+      const colors = ["#1E90FF", "#00E6A1", "#FFD600", "#7C6CE0", "#FF5C6C"];
+      let hash = 0;
+      for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) % colors.length;
+      return colors[Math.abs(hash) % colors.length];
+    }
+
+    async function lookup(phone) {
+      const msgEl = document.getElementById("lookupMsg");
+      const { data, error } = await sb.from("joueurs").select("*").eq("phone", phone).maybeSingle();
+      if (error) { showMsg(msgEl, "Erreur : " + error.message); return; }
+      if (!data) { showMsg(msgEl, "Aucun profil trouvé avec ce numéro. Pronostique au moins une fois pour en créer un !"); return; }
+
+      joueur = data;
+      localStorage.setItem("ldc_phone", phone);
+      msgEl.innerHTML = "";
+      document.getElementById("screen-lookup").hidden = true;
+      document.getElementById("screen-profile").hidden = false;
+      await renderProfile();
+    }
+
+    async function renderProfile() {
+      document.getElementById("profilePseudo").textContent = joueur.pseudo;
+      document.getElementById("avatarInitial").textContent = joueur.pseudo.charAt(0).toUpperCase();
+      document.getElementById("avatar").style.background = `linear-gradient(135deg, ${avatarColor(joueur.pseudo)}, #0e2a4f)`;
+
+      const { data: saison } = await sb.from("classement_saison").select("*").order("points_total", { ascending: false });
+      const idx = (saison || []).findIndex(r => r.joueur_id === joueur.id);
+      document.getElementById("statRank").textContent = idx >= 0 ? `${idx + 1}e` : "–";
+      document.getElementById("statPoints").textContent = idx >= 0 ? (saison[idx].points_total ?? 0) : 0;
+
+      const { data: pronosJoueur } = await sb.from("pronostics").select("match_id, matchs(soiree_id)").eq("joueur_id", joueur.id);
+      const soireeIds = new Set((pronosJoueur || []).map(p => p.matchs?.soiree_id).filter(Boolean));
+      document.getElementById("statSoirees").textContent = soireeIds.size;
+
+      await renderTonight();
+    }
+
+    async function renderTonight() {
+      const { data: soiree } = await sb.from("soirees").select("*").eq("date", todayStr()).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const card = document.getElementById("tonightCard");
+      const body = document.getElementById("tonightBody");
+      if (couponInterval) { clearInterval(couponInterval); couponInterval = null; }
+
+      if (!soiree) { card.hidden = true; return; }
+      card.hidden = false;
+      document.getElementById("tonightTitle").textContent = soiree.label || `Soirée du ${soiree.date}`;
+
+      const { data: classementSoir } = await sb.from("classement_soiree")
+        .select("*").eq("soiree_id", soiree.id).order("points_soiree", { ascending: false });
+      const rank = (classementSoir || []).findIndex(r => r.joueur_id === joueur.id);
+
+      if (rank === -1) {
+        body.innerHTML = `<p class="hint" style="margin:0;">Tu n'as pas encore pronostiqué ce soir.</p>`;
+        return;
+      }
+
+      if (rank !== 0) {
+        const pts = classementSoir[rank].points_soiree ?? 0;
+        body.innerHTML = `<p style="margin:0;">Tu es <b>${rank + 1}e</b> ce soir avec <b>${pts} pts</b>. Le classement peut encore bouger !</p>`;
+        return;
+      }
+
+      // rank === 0 : le joueur est en tête ce soir
+      if (!soiree.recompense_choix) {
+        body.innerHTML = `
+          <p style="margin:0 0 4px;">🎉 Tu es <b>1er</b> ce soir ! Choisis ta récompense :</p>
+          <div class="choice-grid">
+            <button type="button" class="choice-btn" data-choice="biere"><span class="emoji">🍺</span><span>Demi de bière blonde</span></button>
+            <button type="button" class="choice-btn" data-choice="soft"><span class="emoji">🥤</span><span>Soft au choix<span class="choice-sub">Hors energy drink</span></span></button>
+            <button type="button" class="choice-btn" data-choice="vin"><span class="emoji">🍷</span><span>Verre de vin au choix</span></button>
+          </div>
+        `;
+        body.querySelectorAll(".choice-btn").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const choix = btn.dataset.choice;
+            const { error } = await sb.from("soirees").update({ recompense_choix: choix, recompense_choisie_at: new Date().toISOString() }).eq("id", soiree.id);
+            if (!error) renderTonight();
+          });
+        });
+        return;
+      }
+
+      renderCoupon(soiree);
+    }
+
+    function renderCoupon(soiree) {
+      const body = document.getElementById("tonightBody");
+      body.innerHTML = `
+        <div class="coupon">
+          <div class="trophy">🏆</div>
+          <div class="title">1er de la soirée !</div>
+          <div class="reward-name">${REWARD_LABELS[soiree.recompense_choix] || soiree.recompense_choix}</div>
+          <div class="live-clock" id="liveClock"></div>
+          <div class="live-date">${soiree.date}</div>
+          <div class="warn">Montre cet écran au comptoir — l'heure ci-dessus est en direct, une capture d'écran ne défilera plus.</div>
+        </div>
+      `;
+      const clockEl = document.getElementById("liveClock");
+      const tick = () => { clockEl.textContent = new Date().toLocaleTimeString("fr-FR"); };
+      tick();
+      couponInterval = setInterval(tick, 1000);
+    }
+
+    document.getElementById("btnLookup").addEventListener("click", () => {
+      const phone = document.getElementById("phone").value.trim();
+      if (!phone) { showMsg(document.getElementById("lookupMsg"), "Entre ton numéro de téléphone."); return; }
+      lookup(phone);
+    });
+
+    document.getElementById("btnChangePhone").addEventListener("click", () => {
+      if (couponInterval) clearInterval(couponInterval);
+      document.getElementById("screen-profile").hidden = true;
+      document.getElementById("screen-lookup").hidden = false;
+    });
+
+    const savedPhone = localStorage.getItem("ldc_phone");
+    if (savedPhone) {
+      document.getElementById("phone").value = savedPhone;
+      lookup(savedPhone);
+    }
+  </script>
+</body>
+</html>

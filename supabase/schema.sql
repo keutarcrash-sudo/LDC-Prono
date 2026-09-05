@@ -17,7 +17,9 @@ create table soirees (
   date date not null,
   code_qr text unique not null,
   label text,
-  recompense text default '1 pinte offerte',
+  recompense text default '1 boisson offerte au choix',
+  recompense_choix text,
+  recompense_choisie_at timestamptz,
   created_at timestamptz default now()
 );
 
@@ -172,4 +174,6 @@ create policy "maj publique pronostics" on pronostics for update using (true);
 -- Editor si ta base a été créée avant l'ajout du champ "recompense"
 -- (sans risque de la relancer plusieurs fois par erreur).
 -- ============================================================
-alter table soirees add column if not exists recompense text default '1 pinte offerte';
+alter table soirees add column if not exists recompense text default '1 boisson offerte au choix';
+alter table soirees add column if not exists recompense_choix text;
+alter table soirees add column if not exists recompense_choisie_at timestamptz;
