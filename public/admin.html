@@ -3,38 +3,56 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Admin — Pronostics Ligue des Champions</title>
+<title>Admin — Predicto Arena 18</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #0A0F1C;
+    --surface: #15223B;
+    --border: #253758;
+    --accent: #1E90FF;
+    --accent-bright: #00F0FF;
+    --gold: #FFD600;
+    --success: #00E6A1;
+    --danger: #FF5C6C;
+    --text: #FFFFFF;
+    --text-muted: #8B96AC;
+  }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 16px; background: #0e1116; color: #eaeef2; }
-  h1 { font-size: 1.4rem; }
-  h2 { font-size: 1.1rem; margin-top: 2rem; border-top: 1px solid #2a2f3a; padding-top: 1.5rem; }
-  .card { background: #161b22; border: 1px solid #2a2f3a; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
-  label { display: block; margin: 10px 0 4px; font-size: 0.9rem; color: #9aa4b2; }
-  input, button { font-size: 1rem; padding: 8px 10px; border-radius: 6px; border: 1px solid #2a2f3a; }
-  input { width: 100%; background: #0e1116; color: #eaeef2; }
-  button { background: #3b82f6; color: white; border: none; cursor: pointer; margin-top: 12px; }
-  button:hover { background: #2563eb; }
-  button.secondary { background: #2a2f3a; }
-  button.secondary:hover { background: #3a4150; }
-  .match-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #2a2f3a; gap: 8px; flex-wrap: wrap; }
+  body { font-family: 'Manrope', system-ui, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 16px 60px; background: var(--bg); color: var(--text); }
+  h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 0.5px; margin-bottom: 4px; }
+  h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.5px; margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+  h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 0.3px; font-weight: normal; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  label { display: block; margin: 10px 0 4px; font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+  input, button { font-size: 1rem; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border); font-family: inherit; }
+  input { width: 100%; background: var(--bg); color: var(--text); }
+  input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  button { background: var(--accent); color: white; border: none; cursor: pointer; margin-top: 12px; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; font-size: 0.9rem; }
+  button:hover { background: #1678d6; }
+  button.secondary { background: var(--border); color: var(--text); }
+  button.secondary:hover { background: #33456b; }
+  .match-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 8px; flex-wrap: wrap; }
   .match-row:last-child { border-bottom: none; }
   .score-edit { display: flex; align-items: center; gap: 6px; }
   .score-edit input { width: 46px; text-align: center; }
   #qrcode { background: white; padding: 12px; display: inline-block; border-radius: 8px; margin-top: 12px; }
-  .msg { padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 0.9rem; }
-  .msg.ok { background: #14361f; color: #7ee08a; }
-  .msg.err { background: #3a1414; color: #ff8a8a; }
+  .msg { padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; font-weight: 700; }
+  .msg.ok { background: rgba(0,230,161,0.15); color: var(--success); }
+  .msg.err { background: rgba(255,92,108,0.15); color: var(--danger); }
   .soiree-block { margin-top: 24px; }
-  .link-box { font-size: 0.85rem; word-break: break-all; color: #9aa4b2; margin-top: 8px; }
+  .link-box { font-size: 0.85rem; word-break: break-all; color: var(--text-muted); margin-top: 8px; }
+  .code-tag { color: var(--gold); font-weight: 800; }
 </style>
 </head>
 <body>
-  <h1>⚙️ Admin — Pronostics Ligue des Champions</h1>
-  <p style="color:#9aa4b2; font-size:0.9rem;">Ne partage ce lien qu'avec l'équipe de l'Arena. Il permet de créer les soirées et de modifier les résultats.</p>
+  <h1>⚙️ Admin — Predicto Arena 18</h1>
+  <p style="color:var(--text-muted); font-size:0.9rem;">Ne partage ce lien qu'avec l'équipe de l'Arena. Il permet de créer les soirées et de modifier les résultats.</p>
 
   <div class="card">
     <h2 style="margin-top:0; border:none; padding-top:0;">Créer une soirée</h2>
@@ -162,7 +180,7 @@
 
         const link = `${SITE_BASE_URL}pronostics.html?code=${soiree.code_qr}`;
         block.innerHTML = `
-          <h3 style="margin:0;">${soiree.label || "Soirée"} — ${soiree.date} <span style="color:#9aa4b2; font-weight:normal;">(code ${soiree.code_qr})</span></h3>
+          <h3 style="margin:0;">${soiree.label || "Soirée"} — ${soiree.date} <span class="code-tag">${soiree.code_qr}</span></h3>
           <div id="qr-${soiree.id}"></div>
           <div class="link-box">${link}</div>
           <div class="matches"></div>

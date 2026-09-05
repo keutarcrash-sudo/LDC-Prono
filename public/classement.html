@@ -3,38 +3,61 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Classement — Ligue des Champions</title>
+<title>Classement — Predicto Arena 18</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #0A0F1C;
+    --surface: #15223B;
+    --border: #253758;
+    --accent: #1E90FF;
+    --accent-bright: #00F0FF;
+    --gold: #FFD600;
+    --silver: #C7D2E3;
+    --bronze: #D89B5D;
+    --text: #FFFFFF;
+    --text-muted: #8B96AC;
+  }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, sans-serif; margin: 0; background: #0e1116; color: #eaeef2; padding: 40px; }
-  h1 { font-size: 2.2rem; text-align: center; margin-bottom: 8px; }
-  .subtitle { text-align: center; color: #9aa4b2; margin-bottom: 40px; font-size: 1.2rem; }
+  body { font-family: 'Manrope', system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); padding: 48px 40px; }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif; font-size: 3.4rem; letter-spacing: 1px;
+    text-align: center; margin: 0; line-height: 1;
+  }
+  .subtitle { text-align: center; color: var(--text-muted); margin: 12px 0 48px; font-size: 1.3rem; text-transform: uppercase; letter-spacing: 1px; }
   .columns { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; }
-  .col { flex: 1; min-width: 360px; max-width: 520px; }
-  .col h2 { font-size: 1.5rem; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
-  table { width: 100%; border-collapse: collapse; font-size: 1.3rem; }
-  td { padding: 10px 6px; border-bottom: 1px solid #2a2f3a; }
-  .rank { color: #9aa4b2; width: 40px; }
-  .rank.gold { color: #ffd700; font-weight: bold; }
-  .rank.silver { color: #c0c0c0; font-weight: bold; }
-  .rank.bronze { color: #cd7f32; font-weight: bold; }
-  .points { text-align: right; font-weight: 700; color: #3b82f6; }
-  .empty { color: #6b7280; font-style: italic; padding: 20px 0; }
+  .col { flex: 1; min-width: 380px; max-width: 560px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; }
+  .col h2 {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.9rem; letter-spacing: 0.5px;
+    border-bottom: 3px solid var(--accent); padding-bottom: 12px; margin-top: 0;
+  }
+  .col.saison h2 { border-bottom-color: var(--gold); }
+  table { width: 100%; border-collapse: collapse; font-size: 1.4rem; }
+  td { padding: 12px 6px; border-bottom: 1px solid var(--border); }
+  .rank { color: var(--text-muted); width: 44px; font-weight: 800; font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; }
+  .rank.gold { color: var(--gold); }
+  .rank.silver { color: var(--silver); }
+  .rank.bronze { color: var(--bronze); }
+  .points { text-align: right; font-weight: 800; color: var(--accent-bright); }
+  .col.saison .points { color: var(--gold); }
+  .empty { color: var(--text-muted); font-style: italic; padding: 24px 0; font-size: 1.1rem; }
 </style>
 </head>
 <body>
-  <h1>🏆 Classement — Ligue des Champions</h1>
+  <h1>🏆 Predicto — Ligue des Champions</h1>
   <div class="subtitle" id="soireeLabel">Chargement…</div>
 
   <div class="columns">
     <div class="col">
-      <h2>Classement du soir</h2>
+      <h2>Classement de la soirée</h2>
       <table id="tableSoiree"><tbody></tbody></table>
     </div>
-    <div class="col">
-      <h2>Classement de la saison</h2>
+    <div class="col saison">
+      <h2>Top saison</h2>
       <table id="tableSaison"><tbody></tbody></table>
     </div>
   </div>
@@ -43,26 +66,29 @@
     const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function rankClass(i) {
-      if (i === 0) return "rank gold";
-      if (i === 1) return "rank silver";
-      if (i === 2) return "rank bronze";
-      return "rank";
+    function rankLabel(i) {
+      if (i === 0) return { cls: "rank gold", text: "🥇" };
+      if (i === 1) return { cls: "rank silver", text: "🥈" };
+      if (i === 2) return { cls: "rank bronze", text: "🥉" };
+      return { cls: "rank", text: String(i + 1) };
     }
 
     function renderTable(tableId, rows, pointsKey) {
       const tbody = document.querySelector(`#${tableId} tbody`);
       if (!rows || rows.length === 0) {
-        tbody.innerHTML = `<tr><td class="empty" colspan="3">Aucun pronostic pour l'instant</td></tr>`;
+        tbody.innerHTML = `<tr><td class="empty" colspan="3">Aucun prono pour l'instant</td></tr>`;
         return;
       }
-      tbody.innerHTML = rows.map((r, i) => `
+      tbody.innerHTML = rows.map((r, i) => {
+        const rank = rankLabel(i);
+        return `
         <tr>
-          <td class="${rankClass(i)}">${i + 1}</td>
+          <td class="${rank.cls}">${rank.text}</td>
           <td>${r.pseudo}</td>
           <td class="points">${r[pointsKey] ?? 0} pts</td>
         </tr>
-      `).join("");
+      `;
+      }).join("");
     }
 
     async function refresh() {
@@ -71,7 +97,7 @@
 
       document.getElementById("soireeLabel").textContent = soiree
         ? (soiree.label || `Soirée du ${soiree.date}`)
-        : "Pas de soirée aujourd'hui — classement de la saison ci-dessous";
+        : "Pas de soirée ce soir — top saison ci-dessous";
 
       if (soiree) {
         const { data: classementSoiree } = await sb.from("classement_soiree")
