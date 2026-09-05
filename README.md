@@ -1,4 +1,4 @@
-# Pronostics Ligue des Champions — Arena
+# Predicto — Pronostics Ligue des Champions — Arena 18
 
 Système de pronostics match par match, pensé pour faire revenir les gens
 physiquement à l'Arena chaque soirée de Ligue des Champions : QR code
