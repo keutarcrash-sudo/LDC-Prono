@@ -27,87 +27,139 @@
   * { box-sizing: border-box; }
   body {
     font-family: 'Manrope', system-ui, sans-serif;
-    max-width: 480px; margin: 0 auto; padding: 24px 16px 60px;
-    background: var(--bg); color: var(--text);
+    max-width: 480px; margin: 0 auto; padding: 20px 16px 60px;
+    background: var(--bg); color: var(--text); min-height: 100vh;
   }
-  h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem; letter-spacing: 0.5px; text-align: center; margin: 4px 0 0;
-    line-height: 1.05;
-  }
-  .subtitle { text-align: center; color: var(--text-muted); font-size: 0.85rem; margin: 6px 0 24px; text-transform: uppercase; letter-spacing: 1px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-  label { display: block; margin: 12px 0 5px; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+  .brand { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px; }
+  .brand h1 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 1px; margin: 0; }
+  .subtitle { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin: 0 0 20px; text-transform: uppercase; letter-spacing: 1px; }
+
+  .steps { display: flex; justify-content: center; gap: 6px; margin-bottom: 22px; }
+  .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.3s, width 0.3s; }
+  .step-dot.active { background: var(--accent-bright); width: 22px; border-radius: 4px; }
+  .step-dot.done { background: var(--success); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+  label { display: block; margin: 12px 0 5px; font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
   input, button { font-size: 1rem; padding: 12px; border-radius: 8px; border: 1px solid var(--border); width: 100%; font-family: inherit; }
   input { background: var(--bg); color: var(--text); }
   input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
-  button { background: var(--accent); color: white; border: none; cursor: pointer; margin-top: 18px; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; text-transform: uppercase; padding: 14px; }
+  button { background: var(--accent); color: white; border: none; cursor: pointer; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; text-transform: uppercase; padding: 14px; }
   button:hover { background: #1678d6; }
   button:active { transform: scale(0.99); }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); margin-top: 10px; }
+  button.ghost:hover { background: var(--surface-2); }
   .hint { color: var(--text-muted); font-size: 0.78rem; margin-top: 6px; }
-  .match-card { margin-bottom: 12px; border-left: 3px solid var(--accent); transition: border-color 0.3s, opacity 0.3s; }
+
+  .checkbox-row { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; }
+  .checkbox-row input[type="checkbox"] { width: auto; margin-top: 3px; accent-color: var(--accent); }
+  .checkbox-row span { font-size: 0.82rem; color: var(--text-muted); }
+
+  .match-card { margin-bottom: 12px; border-left: 3px solid var(--accent); transition: border-color 0.3s, opacity 0.3s; padding: 16px; }
   .match-card.closing { border-left-color: var(--gold); }
   .match-card.closed { border-left-color: var(--closed); opacity: 0.55; }
   .teams { display: flex; justify-content: space-between; align-items: center; font-weight: 800; margin-bottom: 8px; font-size: 1.05rem; }
   .teams span:nth-child(2) { color: var(--text-muted); font-weight: 500; font-size: 0.85rem; }
-  .match-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .match-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .kickoff { color: var(--text-muted); font-size: 0.8rem; }
   .state-badge { display: inline-block; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: rgba(30,144,255,0.15); color: var(--accent-bright); }
   .state-badge.closing { background: rgba(255,214,0,0.15); color: var(--gold); }
   .state-badge.closed { background: rgba(124,108,224,0.18); color: var(--closed); }
-  .score-inputs { display: flex; align-items: center; justify-content: center; gap: 12px; }
-  .score-inputs input { width: 68px; text-align: center; font-size: 1.5rem; font-weight: 800; padding: 10px; }
-  .score-inputs span { color: var(--text-muted); font-weight: 800; font-size: 1.2rem; }
+
+  .stepper-row { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .stepper { display: flex; align-items: center; gap: 10px; }
+  .step-btn {
+    width: 40px; height: 40px; padding: 0; border-radius: 10px; background: var(--surface-2);
+    color: var(--text); border: 1px solid var(--border); font-size: 1.3rem; font-weight: 800; line-height: 1;
+  }
+  .step-btn:hover { background: #24365c; }
+  .step-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .step-value { display: inline-block; width: 32px; text-align: center; font-size: 1.5rem; font-weight: 800; font-family: 'Bebas Neue', sans-serif; }
+  .dash { color: var(--text-muted); font-weight: 800; font-size: 1.2rem; }
+
   .msg { padding: 14px; border-radius: 10px; margin-top: 12px; font-size: 0.95rem; text-align: center; font-weight: 700; }
   .msg.ok { background: rgba(0,230,161,0.15); color: var(--success); }
   .msg.err { background: rgba(255,92,108,0.15); color: var(--danger); }
-  #app { display: none; }
-  #invalidCode h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 1px; color: var(--closed); margin: 0 0 8px; }
+
+  .confirm-icon { font-size: 3.5rem; text-align: center; margin-bottom: 8px; }
+  .confirm-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; text-align: center; letter-spacing: 0.5px; color: var(--success); margin: 0 0 6px; }
+  .confirm-sub { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; }
+  .share-row { display: flex; gap: 10px; }
+  .share-row button { flex: 1; }
+
+  #screen-invalid h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 1px; color: var(--closed); margin: 0 0 8px; }
+
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-  <h1>⚽ Prono. Grimpe au classement.</h1>
+  <div class="brand"><span>⚽</span><h1>PREDICTO</h1></div>
   <div class="subtitle">Ligue des Champions — Arena 18</div>
 
-  <div id="invalidCode" class="card" style="display:none; text-align:center;">
+  <div class="steps" id="steps">
+    <div class="step-dot" data-step="welcome"></div>
+    <div class="step-dot" data-step="pronostics"></div>
+    <div class="step-dot" data-step="confirm"></div>
+  </div>
+
+  <div id="screen-invalid" class="card" hidden style="text-align:center;">
     <h2>QR expiré</h2>
     <p>Ce lien n'est plus valable.</p>
     <p class="hint">Scanne le QR code affiché ce soir à l'Arena 18 pour pronostiquer les matchs de la soirée.</p>
   </div>
 
-  <div id="loading" class="card" style="text-align:center;">Chargement…</div>
+  <div id="screen-loading" class="card" style="text-align:center;">Chargement…</div>
 
-  <div id="app">
-    <div class="card" id="identityCard">
+  <section id="screen-welcome" hidden>
+    <div class="card">
+      <h2 style="font-family:'Bebas Neue',sans-serif; letter-spacing:0.5px; margin:0 0 4px; font-size:1.4rem;" id="welcomeTitle">Bienvenue à l'Arena 18</h2>
+      <p class="hint" id="welcomeSubtitle">Entre ton pseudo et ton numéro pour commencer.</p>
       <label for="pseudo">Ton pseudo</label>
       <input type="text" id="pseudo" placeholder="ex: Julien" maxlength="30" />
       <label for="phone">Ton téléphone</label>
       <input type="tel" id="phone" placeholder="ex: 0612345678" />
-      <p class="hint">Ça sert juste à te retrouver au classement de la saison, d'une soirée à l'autre.</p>
+      <div class="checkbox-row">
+        <input type="checkbox" id="reglement" />
+        <span>J'accepte que mes pronostics servent au classement de la soirée et de la saison.</span>
+      </div>
+      <button id="btnWelcomeNext" style="margin-top:18px;">C'est parti !</button>
+      <div id="welcomeMsg"></div>
     </div>
+  </section>
 
+  <section id="screen-pronostics" hidden>
     <div id="matchesContainer"></div>
-
-    <button id="btnSubmit">Je valide mes pronos</button>
+    <button id="btnSubmit">Valider mes pronostics</button>
     <div id="submitMsg"></div>
-  </div>
+  </section>
+
+  <section id="screen-confirm" hidden>
+    <div class="card">
+      <div class="confirm-icon">✅</div>
+      <div class="confirm-title">Pronostics enregistrés !</div>
+      <div class="confirm-sub" id="confirmSub">Bonne soirée à l'Arena 18.</div>
+      <div class="share-row">
+        <button id="btnShare">📤 Partager</button>
+        <button class="ghost" id="btnClassement">🏆 Classement</button>
+      </div>
+    </div>
+  </section>
 
   <script>
-    const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
+    const { SUPABASE_URL, SUPABASE_ANON_KEY, SITE_BASE_URL } = window.APP_CONFIG;
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const params = new URLSearchParams(window.location.search);
     const code = (params.get("code") || "").toUpperCase().trim();
 
-    const CLOSING_SOON_MS = 15 * 60 * 1000; // "bientôt fermé" dans les 15 dernières minutes
+    const CLOSING_SOON_MS = 15 * 60 * 1000;
 
     let soiree = null;
     let matchs = [];
-    let joueurId = localStorage.getItem("ldc_joueur_id") || null;
+    let joueur = null;
+    const scores = {}; // `${matchId}:${side}` -> number | null
 
     function todayStr() {
-      // Date locale (pas UTC) pour matcher la date choisie dans admin.html,
-      // qui vient d'un <input type="date"> toujours exprimé en heure locale.
       const d = new Date();
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -126,12 +178,24 @@
       return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     }
 
+    function goToStep(name) {
+      ["welcome", "pronostics", "confirm"].forEach(s => {
+        document.getElementById(`screen-${s}`).hidden = (s !== name);
+      });
+      document.querySelectorAll(".step-dot").forEach(dot => {
+        const order = ["welcome", "pronostics", "confirm"];
+        const dotIdx = order.indexOf(dot.dataset.step);
+        const curIdx = order.indexOf(name);
+        dot.classList.toggle("active", dotIdx === curIdx);
+        dot.classList.toggle("done", dotIdx < curIdx);
+      });
+    }
+
     async function init() {
       if (!code) { fail(); return; }
 
       const { data, error } = await sb.from("soirees").select("*").eq("code_qr", code).maybeSingle();
       if (error || !data) { fail(); return; }
-
       if (data.date !== todayStr()) { fail(); return; }
 
       soiree = data;
@@ -139,27 +203,58 @@
       if (mErr) { fail(); return; }
       matchs = m || [];
 
-      document.getElementById("loading").style.display = "none";
-      document.getElementById("app").style.display = "block";
+      document.getElementById("screen-loading").hidden = true;
+      document.getElementById("welcomeTitle").textContent = soiree.label || `Soirée du ${soiree.date}`;
 
       const savedPseudo = localStorage.getItem("ldc_pseudo");
       const savedPhone = localStorage.getItem("ldc_phone");
       if (savedPseudo) document.getElementById("pseudo").value = savedPseudo;
       if (savedPhone) document.getElementById("phone").value = savedPhone;
+      if (savedPseudo && savedPhone) document.getElementById("reglement").checked = true;
 
-      renderMatches();
-      updateMatchStates();
-      setInterval(updateMatchStates, 1000);
-
-      if (savedPhone) {
-        await loadExistingPronostics(savedPhone);
-      }
+      goToStep("welcome");
     }
 
     function fail() {
-      document.getElementById("loading").style.display = "none";
-      document.getElementById("invalidCode").style.display = "block";
+      document.getElementById("screen-loading").hidden = true;
+      document.getElementById("screen-invalid").hidden = false;
     }
+
+    document.getElementById("btnWelcomeNext").addEventListener("click", async () => {
+      const msgEl = document.getElementById("welcomeMsg");
+      const pseudo = document.getElementById("pseudo").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const accepted = document.getElementById("reglement").checked;
+
+      if (!pseudo || !phone) { showMsg(msgEl, "Pseudo + téléphone obligatoires pour jouer.", false); return; }
+      if (!accepted) { showMsg(msgEl, "Coche la case pour continuer.", false); return; }
+
+      try {
+        let { data: existingJoueur } = await sb.from("joueurs").select("*").eq("phone", phone).maybeSingle();
+        if (existingJoueur) {
+          if (existingJoueur.pseudo !== pseudo) {
+            await sb.from("joueurs").update({ pseudo }).eq("id", existingJoueur.id);
+            existingJoueur.pseudo = pseudo;
+          }
+          joueur = existingJoueur;
+        } else {
+          const { data: newJoueur, error: jErr } = await sb.from("joueurs").insert({ phone, pseudo }).select().single();
+          if (jErr) throw jErr;
+          joueur = newJoueur;
+        }
+
+        localStorage.setItem("ldc_pseudo", pseudo);
+        localStorage.setItem("ldc_phone", phone);
+        msgEl.innerHTML = "";
+
+        renderMatches();
+        updateMatchStates();
+        await loadExistingPronostics();
+        goToStep("pronostics");
+      } catch (e) {
+        showMsg(msgEl, "Erreur : " + e.message, false);
+      }
+    });
 
     function renderMatches() {
       const container = document.getElementById("matchesContainer");
@@ -175,14 +270,43 @@
             <span class="kickoff">${kickoff.toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
             <span class="state-badge" data-badge="${m.id}">Ouvert</span>
           </div>
-          <div class="score-inputs">
-            <input type="number" min="0" max="20" data-match="${m.id}" data-side="home" />
-            <span>-</span>
-            <input type="number" min="0" max="20" data-match="${m.id}" data-side="away" />
+          <div class="stepper-row">
+            ${stepperHtml(m.id, "home")}
+            <span class="dash">-</span>
+            ${stepperHtml(m.id, "away")}
           </div>
         `;
         container.appendChild(card);
       });
+
+      container.querySelectorAll(".step-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const wrap = btn.closest(".stepper");
+          const matchId = wrap.dataset.match;
+          const side = wrap.dataset.side;
+          stepChange(matchId, side, btn.dataset.op === "inc" ? 1 : -1);
+        });
+      });
+    }
+
+    function stepperHtml(matchId, side) {
+      return `
+        <div class="stepper" data-match="${matchId}" data-side="${side}">
+          <button type="button" class="step-btn" data-op="dec">−</button>
+          <span class="step-value" data-value>–</span>
+          <button type="button" class="step-btn" data-op="inc">+</button>
+        </div>
+      `;
+    }
+
+    function stepChange(matchId, side, delta) {
+      const key = `${matchId}:${side}`;
+      let v = scores[key];
+      if (v === undefined || v === null) v = 0;
+      else v = Math.max(0, Math.min(20, v + delta));
+      scores[key] = v;
+      const el = document.querySelector(`.stepper[data-match="${matchId}"][data-side="${side}"] [data-value]`);
+      if (el) el.textContent = v;
     }
 
     function updateMatchStates() {
@@ -192,19 +316,17 @@
         const remaining = kickoff - now;
         const card = document.querySelector(`.match-card[data-match-id="${m.id}"]`);
         const badge = document.querySelector(`[data-badge="${m.id}"]`);
-        const homeInput = document.querySelector(`input[data-match="${m.id}"][data-side="home"]`);
-        const awayInput = document.querySelector(`input[data-match="${m.id}"][data-side="away"]`);
         if (!card || !badge) return;
 
         card.classList.remove("closing", "closed");
         badge.classList.remove("closing", "closed");
 
+        const buttons = card.querySelectorAll(".step-btn");
         if (remaining <= 0) {
           card.classList.add("closed");
           badge.classList.add("closed");
           badge.textContent = "Fermé";
-          if (homeInput) homeInput.disabled = true;
-          if (awayInput) awayInput.disabled = true;
+          buttons.forEach(b => b.disabled = true);
         } else if (remaining <= CLOSING_SOON_MS) {
           card.classList.add("closing");
           badge.classList.add("closing");
@@ -214,58 +336,39 @@
         }
       });
     }
+    setInterval(updateMatchStates, 1000);
 
-    async function loadExistingPronostics(phone) {
-      const { data: joueur } = await sb.from("joueurs").select("*").eq("phone", phone).maybeSingle();
+    async function loadExistingPronostics() {
       if (!joueur) return;
-      joueurId = joueur.id;
       const matchIds = matchs.map(m => m.id);
       if (matchIds.length === 0) return;
       const { data: existing } = await sb.from("pronostics").select("*").eq("joueur_id", joueur.id).in("match_id", matchIds);
       (existing || []).forEach(p => {
-        const homeInput = document.querySelector(`input[data-match="${p.match_id}"][data-side="home"]`);
-        const awayInput = document.querySelector(`input[data-match="${p.match_id}"][data-side="away"]`);
-        if (homeInput) homeInput.value = p.score_domicile_predit;
-        if (awayInput) awayInput.value = p.score_exterieur_predit;
+        scores[`${p.match_id}:home`] = p.score_domicile_predit;
+        scores[`${p.match_id}:away`] = p.score_exterieur_predit;
+        const homeEl = document.querySelector(`.stepper[data-match="${p.match_id}"][data-side="home"] [data-value]`);
+        const awayEl = document.querySelector(`.stepper[data-match="${p.match_id}"][data-side="away"] [data-value]`);
+        if (homeEl) homeEl.textContent = p.score_domicile_predit;
+        if (awayEl) awayEl.textContent = p.score_exterieur_predit;
       });
     }
 
     document.getElementById("btnSubmit").addEventListener("click", async () => {
       const msgEl = document.getElementById("submitMsg");
-      const pseudo = document.getElementById("pseudo").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-
-      if (!pseudo || !phone) { showMsg(msgEl, "Pseudo + téléphone obligatoires pour jouer.", false); return; }
-
       try {
-        let { data: joueur } = await sb.from("joueurs").select("*").eq("phone", phone).maybeSingle();
-        if (joueur) {
-          if (joueur.pseudo !== pseudo) {
-            await sb.from("joueurs").update({ pseudo }).eq("id", joueur.id);
-          }
-        } else {
-          const { data: newJoueur, error: jErr } = await sb.from("joueurs").insert({ phone, pseudo }).select().single();
-          if (jErr) throw jErr;
-          joueur = newJoueur;
-        }
-        joueurId = joueur.id;
-        localStorage.setItem("ldc_joueur_id", joueurId);
-        localStorage.setItem("ldc_pseudo", pseudo);
-        localStorage.setItem("ldc_phone", phone);
-
         const now = new Date();
         const rows = [];
         for (const m of matchs) {
           const kickoff = new Date(m.coup_envoi);
           if (now >= kickoff) continue;
-          const homeInput = document.querySelector(`input[data-match="${m.id}"][data-side="home"]`);
-          const awayInput = document.querySelector(`input[data-match="${m.id}"][data-side="away"]`);
-          if (homeInput.value === "" || awayInput.value === "") continue;
+          const home = scores[`${m.id}:home`];
+          const away = scores[`${m.id}:away`];
+          if (home === undefined || home === null || away === undefined || away === null) continue;
           rows.push({
             joueur_id: joueur.id,
             match_id: m.id,
-            score_domicile_predit: parseInt(homeInput.value, 10),
-            score_exterieur_predit: parseInt(awayInput.value, 10),
+            score_domicile_predit: home,
+            score_exterieur_predit: away,
           });
         }
 
@@ -274,10 +377,30 @@
         const { error: pErr } = await sb.from("pronostics").upsert(rows, { onConflict: "joueur_id,match_id" });
         if (pErr) throw pErr;
 
-        showMsg(msgEl, `🔥 Pronos enregistrés pour ${rows.length} match(s) ! Rendez-vous au classement.`, true);
+        document.getElementById("confirmSub").textContent = `${rows.length} match(s) pronostiqué(s). Rendez-vous en fin de soirée pour le classement !`;
+        goToStep("confirm");
       } catch (e) {
         showMsg(msgEl, "Erreur : " + e.message, false);
       }
+    });
+
+    document.getElementById("btnShare").addEventListener("click", async () => {
+      const text = "🔥 Je viens de pronostiquer sur Predicto à l'Arena 18 ! Viens tenter ta chance toi aussi.";
+      const url = SITE_BASE_URL;
+      if (navigator.share) {
+        try { await navigator.share({ text, url }); } catch (e) { /* annulé par l'utilisateur */ }
+      } else {
+        try {
+          await navigator.clipboard.writeText(`${text} ${url}`);
+          alert("Texte copié ! Colle-le où tu veux le partager.");
+        } catch (e) {
+          alert(text + " " + url);
+        }
+      }
+    });
+
+    document.getElementById("btnClassement").addEventListener("click", () => {
+      window.location.href = "classement.html";
     });
 
     init();
