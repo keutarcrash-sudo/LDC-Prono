@@ -35,6 +35,13 @@
       radial-gradient(ellipse 800px 500px at 50% -10%, rgba(30,144,255,0.18), transparent),
       var(--bg);
     color: var(--text); min-height: 100vh;
+    transition: background-image 0.4s ease;
+  }
+  body.step-welcome-bg {
+    background:
+      linear-gradient(rgba(10,15,28,0.55), rgba(10,15,28,0.88)),
+      url('assets/rainbow-glass.jpg') center/cover no-repeat fixed,
+      var(--bg);
   }
 
   .bottom-nav {
@@ -82,6 +89,7 @@
     background: linear-gradient(0deg, rgba(10,15,28,0.85) 10%, rgba(10,15,28,0.1) 80%);
   }
   .hero-banner span { position: relative; z-index: 1; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.5px; }
+  .confirm-banner { background-image: url('assets/starball.jpg'), linear-gradient(135deg, #1B2C4C, #0A0F1C 70%); }
 
   .reward-banner {
     display: flex; align-items: center; gap: 10px; background: linear-gradient(90deg, rgba(255,214,0,0.14), rgba(255,214,0,0.03));
@@ -107,24 +115,57 @@
   .checkbox-row input[type="checkbox"] { width: auto; margin-top: 3px; accent-color: var(--accent); }
   .checkbox-row span { font-size: 0.82rem; color: var(--text-muted); }
 
-  .match-card { margin-bottom: 12px; border-left: 3px solid var(--accent); transition: border-color 0.3s, opacity 0.3s; padding: 16px; }
-  .match-card.closing { border-left-color: var(--gold); }
-  .match-card.closed { border-left-color: var(--closed); opacity: 0.55; }
-  .teams { display: flex; justify-content: space-between; align-items: center; font-weight: 800; margin-bottom: 8px; font-size: 1rem; gap: 6px; }
-  .teams .vs { color: var(--text-muted); font-weight: 500; font-size: 0.8rem; flex-shrink: 0; }
-  .team-side { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-  .team-side span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .team-side.away { flex-direction: row-reverse; text-align: right; }
-  .team-badge { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--surface-2); }
-  .team-badge img { width: 100%; height: 100%; object-fit: contain; }
-  .team-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; background: linear-gradient(135deg, var(--accent), #0e4f8f); color: white; }
-  .match-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-  .kickoff { color: var(--text-muted); font-size: 0.8rem; }
+  .match-card {
+    position: relative; margin-bottom: 16px; padding: 0; overflow: hidden;
+    background: linear-gradient(160deg, #1a2842 0%, #101b30 55%, #0a0f1c 100%);
+    border: 1px solid #2c3f66; border-radius: 16px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 24px rgba(0,0,0,0.45);
+    transition: opacity 0.3s, border-color 0.3s;
+  }
+  .match-card.closing { border-color: rgba(255,214,0,0.5); }
+  .match-card.closed { opacity: 0.5; }
+  .rivet {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%; z-index: 2;
+    background: radial-gradient(circle at 35% 35%, #dbe4f5, #6b7690 60%, #2b3450 100%);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.7);
+  }
+  .rivet.tl { top: 8px; left: 8px; } .rivet.tr { top: 8px; right: 8px; }
+  .rivet.bl { bottom: 8px; left: 8px; } .rivet.br { bottom: 8px; right: 8px; }
+
+  .plaque-header {
+    display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.07); background: rgba(0,0,0,0.15);
+  }
+  .plaque-header .label { font-family: 'Bebas Neue', sans-serif; letter-spacing: 1.5px; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+
+  .teams { display: flex; justify-content: space-between; align-items: center; padding: 20px 16px; gap: 8px; }
+  .team-side { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .team-side span { font-weight: 800; font-size: 0.82rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .team-badge {
+    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+    background: radial-gradient(circle at 35% 30%, #22314f, #0d1526);
+    border: 1px solid #2c3f66; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  }
+  .team-badge img { width: 68%; height: 68%; object-fit: contain; }
+  .team-fallback { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; background: linear-gradient(135deg, var(--accent), #0e4f8f); color: white; }
+  .vs-badge {
+    width: 30px; height: 30px; flex-shrink: 0; transform: rotate(45deg);
+    background: var(--accent); box-shadow: 0 0 16px rgba(30,144,255,0.55);
+    display: flex; align-items: center; justify-content: center; margin-top: -20px;
+  }
+  .vs-badge span { transform: rotate(-45deg); font-family: 'Bebas Neue', sans-serif; font-size: 0.7rem; color: white; }
+
+  .plaque-footer {
+    display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;
+    border-top: 1px solid rgba(255,255,255,0.07); background: rgba(0,0,0,0.15);
+  }
+  .kickoff { color: var(--text-muted); font-size: 0.78rem; }
   .state-badge { display: inline-block; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: rgba(30,144,255,0.15); color: var(--accent-bright); }
   .state-badge.closing { background: rgba(255,214,0,0.15); color: var(--gold); }
   .state-badge.closed { background: rgba(124,108,224,0.18); color: var(--closed); }
 
-  .stepper-row { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .stepper-row { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 4px 16px 18px; }
   .stepper { display: flex; align-items: center; gap: 10px; }
   .step-btn {
     width: 40px; height: 40px; padding: 0; border-radius: 10px; background: var(--surface-2);
@@ -208,6 +249,7 @@
   </section>
 
   <section id="screen-confirm" hidden>
+    <div class="hero-banner confirm-banner"><span>Bien joué !</span></div>
     <div class="card">
       <div class="confirm-icon"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg></span></div>
       <div class="confirm-title">Pronostics enregistrés !</div>
@@ -274,6 +316,7 @@
       ["welcome", "pronostics", "confirm"].forEach(s => {
         document.getElementById(`screen-${s}`).hidden = (s !== name);
       });
+      document.body.classList.toggle("step-welcome-bg", name === "welcome");
       const order = ["welcome", "pronostics", "confirm"];
       const curIdx = order.indexOf(name);
       document.querySelectorAll(".step-node").forEach(node => {
@@ -375,16 +418,21 @@
         if (scores[`${m.id}:away`] === undefined) scores[`${m.id}:away`] = 0;
         const kickoff = new Date(m.coup_envoi);
         const card = document.createElement("div");
-        card.className = "card match-card";
+        card.className = "match-card";
         card.dataset.matchId = m.id;
         card.innerHTML = `
+          <span class="rivet tl"></span><span class="rivet tr"></span>
+          <span class="rivet bl"></span><span class="rivet br"></span>
+          <div class="plaque-header">
+            <span class="label">Ligue des champions</span>
+          </div>
           <div class="teams">
             <span class="team-side">${teamBadge(m.equipe_domicile, m.logo_domicile)}<span>${m.equipe_domicile}</span></span>
-            <span class="vs">vs</span>
-            <span class="team-side away">${teamBadge(m.equipe_exterieur, m.logo_exterieur)}<span>${m.equipe_exterieur}</span></span>
+            <span class="vs-badge"><span>VS</span></span>
+            <span class="team-side">${teamBadge(m.equipe_exterieur, m.logo_exterieur)}<span>${m.equipe_exterieur}</span></span>
           </div>
-          <div class="match-meta">
-            <span class="kickoff">${kickoff.toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
+          <div class="plaque-footer">
+            <span class="kickoff">${kickoff.toLocaleString("fr-FR", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
             <span class="state-badge" data-badge="${m.id}">Ouvert</span>
           </div>
           <div class="stepper-row">

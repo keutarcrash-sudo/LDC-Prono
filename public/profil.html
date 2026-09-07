@@ -30,7 +30,10 @@
   body {
     font-family: 'Manrope', system-ui, sans-serif;
     max-width: 480px; margin: 0 auto; padding: 24px 16px 90px;
-    background: radial-gradient(ellipse 800px 500px at 50% -10%, rgba(30,144,255,0.18), transparent), var(--bg);
+    background:
+      radial-gradient(ellipse 800px 500px at 50% -10%, rgba(30,144,255,0.18), transparent),
+      linear-gradient(rgba(10,15,28,0.82), rgba(10,15,28,0.93)), url('assets/trophy.jpg') center/cover no-repeat fixed,
+      var(--bg);
     color: var(--text); min-height: 100vh;
   }
 
