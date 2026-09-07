@@ -127,14 +127,11 @@
     }
 
     async function refresh() {
-      // Date locale (pas UTC), voir pronostics.html pour l'explication.
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      const { data: soiree } = await sb.from("soirees").select("*").eq("date", todayStr).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const { data: soiree } = await sb.from("soirees").select("*").eq("active", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
 
       document.getElementById("soireeLabel").textContent = soiree
         ? (soiree.label || `Soirée du ${soiree.date}`)
-        : "Pas de soirée ce soir — top saison ci-dessous";
+        : "Pas de soirée active — top saison ci-dessous";
 
       if (soiree) {
         const { data: classementSoiree } = await sb.from("classement_soiree")

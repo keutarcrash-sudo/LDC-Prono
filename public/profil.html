@@ -203,11 +203,6 @@
     let joueur = null;
     let couponIntervals = [];
 
-    function todayStr() {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    }
-
     function showMsg(el, text) {
       el.innerHTML = `<div class="msg err">${text}</div>`;
     }
@@ -256,7 +251,7 @@
     }
 
     async function renderTonight() {
-      const { data: soiree } = await sb.from("soirees").select("*").eq("date", todayStr()).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const { data: soiree } = await sb.from("soirees").select("*").eq("active", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
       const card = document.getElementById("tonightCard");
       const body = document.getElementById("tonightBody");
       couponIntervals.forEach(clearInterval);

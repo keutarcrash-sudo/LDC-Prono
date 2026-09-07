@@ -17,6 +17,7 @@ create table soirees (
   date date not null,
   code_qr text unique not null,
   label text,
+  active boolean not null default true,
   recompense text default '1 boisson offerte : demi blonde, soft (hors energy drink) ou vin (blanc/rouge/rosé) au choix',
   recompense_choix text,
   recompense_choisie_at timestamptz,
@@ -188,3 +189,4 @@ alter table matchs add column if not exists logo_domicile text;
 alter table matchs add column if not exists logo_exterieur text;
 alter table pronostics add column if not exists recompense_choix text;
 alter table pronostics add column if not exists recompense_choisie_at timestamptz;
+alter table soirees add column if not exists active boolean not null default true;

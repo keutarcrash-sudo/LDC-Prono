@@ -167,8 +167,8 @@
   </div>
 
   <div id="screen-invalid" class="card" hidden style="text-align:center;">
-    <h2>QR expiré</h2>
-    <p>Ce lien n'est plus valable.</p>
+    <h2>Pas encore ouvert</h2>
+    <p>Cette soirée n'est pas (ou plus) active.</p>
     <p class="hint">Scanne le QR code affiché ce soir à l'Arena 18 pour pronostiquer les matchs de la soirée.</p>
   </div>
 
@@ -239,14 +239,6 @@
     let joueur = null;
     const scores = {}; // `${matchId}:${side}` -> number | null
 
-    function todayStr() {
-      const d = new Date();
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    }
-
     function showMsg(el, text, ok) {
       el.innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
     }
@@ -276,7 +268,7 @@
 
       const { data, error } = await sb.from("soirees").select("*").eq("code_qr", code).maybeSingle();
       if (error || !data) { fail(); return; }
-      if (data.date !== todayStr()) { fail(); return; }
+      if (!data.active) { fail(); return; }
 
       soiree = data;
       localStorage.setItem("ldc_last_code", code);

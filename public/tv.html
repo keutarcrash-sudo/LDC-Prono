@@ -119,11 +119,6 @@
       return `<span class="team-badge">${img}${fallback}</span>`;
     }
 
-    function todayStr() {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    }
-
     function formatCountdown(ms) {
       const totalSec = Math.max(0, Math.floor(ms / 1000));
       const h = Math.floor(totalSec / 3600);
@@ -159,7 +154,7 @@
     }
 
     async function tick() {
-      const { data: soiree } = await sb.from("soirees").select("*").eq("date", todayStr()).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const { data: soiree } = await sb.from("soirees").select("*").eq("active", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
 
       if (!soiree) { await renderIdle(); return; }
 

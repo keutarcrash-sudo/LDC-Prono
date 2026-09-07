@@ -79,9 +79,16 @@ Vercel redéploiera automatiquement.
 
 ## Utilisation le soir d'un match
 
+Une soirée peut être créée à l'avance (n'importe quelle date), mais son QR
+ne fonctionne que pendant qu'elle est marquée **Active** dans `admin.html`
+— une seule soirée active à la fois. Créer une nouvelle soirée désactive
+automatiquement l'ancienne ; tu peux aussi activer/désactiver manuellement
+avec le bouton dédié, et supprimer une soirée de test avec 🗑️ Supprimer.
+
 1. Ouvre `admin.html`, choisis la date de la soirée, clique **Créer la
    soirée et importer les matchs** (les matchs de la Ligue des Champions de
-   ce jour sont importés automatiquement).
+   ce jour sont importés automatiquement). Elle devient active tout de
+   suite.
 2. Le QR code apparaît sous la soirée créée. Affiche-le sur l'écran de
    l'Arena (capture d'écran ou vidéoprojection de la page).
 3. Les clients scannent le QR, entrent pseudo + téléphone, pronostiquent les
