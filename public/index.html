@@ -18,13 +18,17 @@
     --text-muted: #8B96AC;
   }
   * { box-sizing: border-box; }
+  html, body { overflow-x: hidden; }
   body {
     font-family: 'Manrope', system-ui, sans-serif;
-    background: var(--bg); color: var(--text);
+    background: linear-gradient(rgba(10,15,28,0.72), rgba(10,15,28,0.85)), url('assets/starball.jpg') center/cover, var(--bg);
+    color: var(--text);
     min-height: 100vh; margin: 0;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 24px;
   }
+  .svg-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: -0.08em; }
+  .svg-icon svg { width: 1em; height: 1em; display: block; }
   h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.6rem; letter-spacing: 1px; margin: 0 0 4px; text-align: center; }
   .subtitle { color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; margin-bottom: 32px; }
   .links { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 320px; }
@@ -38,7 +42,7 @@
 </style>
 </head>
 <body>
-  <h1>🏆 Predicto</h1>
+  <h1><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/></svg></span> Predicto</h1>
   <div class="subtitle">Ligue des Champions — Arena 18</div>
   <div class="links">
     <a class="link-card" href="admin.html">⚙️ Admin (staff)</a>

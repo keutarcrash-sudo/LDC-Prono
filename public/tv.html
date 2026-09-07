@@ -30,8 +30,12 @@
   body {
     font-family: 'Manrope', system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text);
     display: flex; align-items: center; justify-content: center; overflow: hidden;
+    background-size: cover; background-position: center; transition: background-image 0.8s ease;
   }
-  .screen { width: 100%; max-width: 1400px; padding: 40px; text-align: center; }
+  body::before {
+    content: ""; position: fixed; inset: 0; background: rgba(10,15,28,0.62); z-index: 0;
+  }
+  .screen { position: relative; z-index: 1; width: 100%; max-width: 1400px; padding: 40px; text-align: center; }
   .eyebrow { text-transform: uppercase; letter-spacing: 3px; color: var(--accent-bright); font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
   .eyebrow.gold { color: var(--gold); }
   .eyebrow.closed { color: var(--closed); }
@@ -137,10 +141,19 @@
       return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     }
 
+    const PHASE_BACKGROUNDS = {
+      idle: "assets/starball.jpg",
+      avant: "assets/starball.jpg",
+      ferme: "assets/hero-bg.jpg",
+      resultats: "assets/trophy.jpg",
+      classement: "assets/trophy.jpg",
+    };
+
     function showPhase(name) {
       ["idle", "avant", "ferme", "resultats", "classement"].forEach(p => {
         document.getElementById(`phase-${p}`).hidden = (p !== name);
       });
+      document.body.style.backgroundImage = `url('${PHASE_BACKGROUNDS[name]}')`;
     }
 
     function rankRowsHtml(rows, pointsKey, extraClass) {
