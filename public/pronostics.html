@@ -43,6 +43,18 @@
       url('assets/rainbow-glass.jpg') center/cover no-repeat fixed,
       var(--bg);
   }
+  body.step-pronostics-bg {
+    background:
+      linear-gradient(rgba(10,15,28,0.65), rgba(10,15,28,0.92)),
+      url('assets/pitch-lights.png') top center/cover no-repeat fixed,
+      var(--bg);
+  }
+  body.step-confirm-bg {
+    background:
+      linear-gradient(rgba(10,15,28,0.6), rgba(10,15,28,0.9)),
+      url('assets/crowd-celebration.png') center/cover no-repeat fixed,
+      var(--bg);
+  }
 
   .bottom-nav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
@@ -89,7 +101,7 @@
     background: linear-gradient(0deg, rgba(10,15,28,0.85) 10%, rgba(10,15,28,0.1) 80%);
   }
   .hero-banner span { position: relative; z-index: 1; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.5px; }
-  .confirm-banner { background-image: url('assets/starball.jpg'), linear-gradient(135deg, #1B2C4C, #0A0F1C 70%); }
+  .confirm-banner { background-image: url('assets/boot-action.png'), linear-gradient(135deg, #1B2C4C, #0A0F1C 70%); }
 
   .reward-banner {
     display: flex; align-items: center; gap: 10px; background: linear-gradient(90deg, rgba(255,214,0,0.14), rgba(255,214,0,0.03));
@@ -317,6 +329,8 @@
         document.getElementById(`screen-${s}`).hidden = (s !== name);
       });
       document.body.classList.toggle("step-welcome-bg", name === "welcome");
+      document.body.classList.toggle("step-pronostics-bg", name === "pronostics");
+      document.body.classList.toggle("step-confirm-bg", name === "confirm");
       const order = ["welcome", "pronostics", "confirm"];
       const curIdx = order.indexOf(name);
       document.querySelectorAll(".step-node").forEach(node => {

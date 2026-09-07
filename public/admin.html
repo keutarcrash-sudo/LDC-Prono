@@ -24,7 +24,10 @@
     --text-muted: #8B96AC;
   }
   * { box-sizing: border-box; }
-  body { font-family: 'Manrope', system-ui, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 16px 60px; background: var(--bg); color: var(--text); }
+  body {
+    font-family: 'Manrope', system-ui, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 16px 60px; color: var(--text);
+    background: linear-gradient(rgba(10,15,28,0.95), rgba(10,15,28,0.98)), url('assets/dark-grass.png') bottom center/cover no-repeat fixed, var(--bg);
+  }
   h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 0.5px; margin-bottom: 4px; }
   h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.5px; margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
   h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 0.3px; font-weight: normal; }
