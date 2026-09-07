@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Pronostics — Arena 18</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -25,6 +25,9 @@
     --text-muted: #8B96AC;
   }
   * { box-sizing: border-box; }
+  html { overflow-x: hidden; overscroll-behavior-x: none; touch-action: pan-y; }
+  body { overflow-x: hidden; overscroll-behavior-x: none; }
+  button, a, input { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   body {
     font-family: 'Manrope', system-ui, sans-serif;
     max-width: 480px; margin: 0 auto; padding: 0 16px 90px;
@@ -351,6 +354,8 @@
       const container = document.getElementById("matchesContainer");
       container.innerHTML = "";
       matchs.forEach(m => {
+        if (scores[`${m.id}:home`] === undefined) scores[`${m.id}:home`] = 0;
+        if (scores[`${m.id}:away`] === undefined) scores[`${m.id}:away`] = 0;
         const kickoff = new Date(m.coup_envoi);
         const card = document.createElement("div");
         card.className = "card match-card";
@@ -385,10 +390,11 @@
     }
 
     function stepperHtml(matchId, side) {
+      const initial = scores[`${matchId}:${side}`] ?? 0;
       return `
         <div class="stepper" data-match="${matchId}" data-side="${side}">
           <button type="button" class="step-btn" data-op="dec">−</button>
-          <span class="step-value" data-value>–</span>
+          <span class="step-value" data-value>${initial}</span>
           <button type="button" class="step-btn" data-op="inc">+</button>
         </div>
       `;
@@ -456,18 +462,15 @@
         for (const m of matchs) {
           const kickoff = new Date(m.coup_envoi);
           if (now >= kickoff) continue;
-          const home = scores[`${m.id}:home`];
-          const away = scores[`${m.id}:away`];
-          if (home === undefined || home === null || away === undefined || away === null) continue;
           rows.push({
             joueur_id: joueur.id,
             match_id: m.id,
-            score_domicile_predit: home,
-            score_exterieur_predit: away,
+            score_domicile_predit: scores[`${m.id}:home`] ?? 0,
+            score_exterieur_predit: scores[`${m.id}:away`] ?? 0,
           });
         }
 
-        if (rows.length === 0) { showMsg(msgEl, "Renseigne au moins un prono avant d'envoyer.", false); return; }
+        if (rows.length === 0) { showMsg(msgEl, "Tous les matchs sont déjà fermés.", false); return; }
 
         const { error: pErr } = await sb.from("pronostics").upsert(rows, { onConflict: "joueur_id,match_id" });
         if (pErr) throw pErr;

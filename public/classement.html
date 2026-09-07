@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Classement — Predicto Arena 18</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -23,6 +23,9 @@
     --text-muted: #8B96AC;
   }
   * { box-sizing: border-box; }
+  html { overflow-x: hidden; overscroll-behavior-x: none; touch-action: pan-y; }
+  body { overflow-x: hidden; overscroll-behavior-x: none; }
+  button, a, input { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   body { font-family: 'Manrope', system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); padding: 48px 40px 100px; }
   h1 {
     font-family: 'Bebas Neue', sans-serif; font-size: 3.4rem; letter-spacing: 1px;
