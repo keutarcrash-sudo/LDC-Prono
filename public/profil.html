@@ -47,6 +47,8 @@
   }
   .nav-item.active { color: var(--accent-bright); }
   .nav-icon { font-size: 1.3rem; }
+  .svg-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: -0.15em; }
+  .svg-icon svg { width: 1em; height: 1em; display: block; }
   .brand { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px; }
   .brand img { height: 30px; }
   .brand img[data-broken] { display: none; }
@@ -143,7 +145,7 @@
 <body>
   <div class="brand">
     <img src="assets/logo.png" alt="" onerror="this.setAttribute('data-broken','')" />
-    <h1>⚽ PREDICTO</h1>
+    <h1><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7l3 2.2-1.1 3.6H10.1L9 9.2 12 7z" fill="currentColor" stroke="none"/><path d="M12 3v4M12 17v4M4.5 8l3.5 1M16 9l3.5-1M6 17l2.5-2.5M15.5 14.5L18 17"/></svg></span> PREDICTO</h1>
   </div>
   <div class="subtitle">Mon profil</div>
 
@@ -183,9 +185,9 @@
   </div>
 
   <nav class="bottom-nav">
-    <a href="pronostics.html" class="nav-item" id="navPronostics"><span class="nav-icon">⚽</span><span>Pronostics</span></a>
-    <a href="classement.html" class="nav-item"><span class="nav-icon">🏆</span><span>Classement</span></a>
-    <a href="profil.html" class="nav-item active"><span class="nav-icon">👤</span><span>Profil</span></a>
+    <a href="pronostics.html" class="nav-item" id="navPronostics"><span class="nav-icon svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7l3 2.2-1.1 3.6H10.1L9 9.2 12 7z" fill="currentColor" stroke="none"/><path d="M12 3v4M12 17v4M4.5 8l3.5 1M16 9l3.5-1M6 17l2.5-2.5M15.5 14.5L18 17"/></svg></span><span>Pronostics</span></a>
+    <a href="classement.html" class="nav-item"><span class="nav-icon svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/></svg></span><span>Classement</span></a>
+    <a href="profil.html" class="nav-item active"><span class="nav-icon svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></span><span>Profil</span></a>
   </nav>
 
   <script>
@@ -285,7 +287,7 @@
 
       if (exactWins.length === 0) {
         body.innerHTML = stillPending
-          ? `<p class="hint" style="margin:0;">🎯 En attente des résultats… Un score exact = une boisson offerte !</p>`
+          ? `<p class="hint" style="margin:0;"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span> En attente des résultats… Un score exact = une boisson offerte !</p>`
           : `<p class="hint" style="margin:0;">Pas de score exact ce soir. Retente ta chance à la prochaine soirée !</p>`;
         return;
       }
@@ -323,7 +325,7 @@
           const dateStr = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
           wrap.innerHTML = `
             <div class="coupon">
-              <div class="trophy">🏆</div>
+              <div class="trophy"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/></svg></span></div>
               <div class="title">Gagnant score exact</div>
               <div class="live-date">${dateStr}</div>
               <div class="victory-match">${m.equipe_domicile} ${p.score_domicile_predit} - ${p.score_exterieur_predit} ${m.equipe_exterieur}</div>

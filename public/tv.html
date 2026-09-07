@@ -35,6 +35,8 @@
   .eyebrow { text-transform: uppercase; letter-spacing: 3px; color: var(--accent-bright); font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
   .eyebrow.gold { color: var(--gold); }
   .eyebrow.closed { color: var(--closed); }
+  .svg-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: -0.1em; }
+  .svg-icon svg { width: 1em; height: 1em; display: block; }
   h1 { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; letter-spacing: 1px; margin: 0 0 20px; line-height: 1; }
   .sub { color: var(--text-muted); font-size: 1.4rem; margin-bottom: 40px; }
   #qrcode { background: white; padding: 20px; display: inline-block; border-radius: 20px; }
@@ -82,7 +84,7 @@
     </div>
 
     <div id="phase-ferme" hidden>
-      <div class="eyebrow closed">🔒 Pronostics fermés</div>
+      <div class="eyebrow closed"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span> Pronostics fermés</div>
       <h1>Que la meilleure équipe de<br>pronostiqueurs gagne !</h1>
       <div class="match-list" id="fermeList"></div>
     </div>
@@ -94,7 +96,7 @@
     </div>
 
     <div id="phase-classement" hidden>
-      <div class="eyebrow gold">🏆 Classement de la soirée</div>
+      <div class="eyebrow gold"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/></svg></span> Classement de la soirée</div>
       <h1>Bravo aux meilleurs pronostiqueurs !</h1>
       <div class="podium" id="classementList"></div>
       <div class="reward" id="rewardLine"></div>
@@ -109,6 +111,14 @@
     let rotateToggle = false;
     let qrRendered = null;
     let cachedEarliestKickoff = null;
+
+    const ICONS = {
+      target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>',
+      check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>',
+    };
+    function icon(name) {
+      return `<span class="svg-icon">${ICONS[name]}</span>`;
+    }
 
     function teamBadge(name, logoUrl) {
       const initial = (name || "?").charAt(0).toUpperCase();
@@ -199,7 +209,9 @@
       rotateToggle = !rotateToggle;
       if (rotateToggle) {
         document.getElementById("resultatsList").innerHTML = matchs.map(m => {
-          const exactBadge = exactCounts[m.id] ? `<span class="check">🎯 ${exactCounts[m.id]} score exact${exactCounts[m.id] > 1 ? "s" : ""} !</span>` : `<span class="check">✅</span>`;
+          const exactBadge = exactCounts[m.id]
+            ? `<span class="check">${icon("target")} ${exactCounts[m.id]} score exact${exactCounts[m.id] > 1 ? "s" : ""} !</span>`
+            : `<span class="check">${icon("check")}</span>`;
           return `
           <div class="match-row finished">
             <span class="teams-line">${teamBadge(m.equipe_domicile, m.logo_domicile)} ${m.equipe_domicile} vs ${m.equipe_exterieur} ${teamBadge(m.equipe_exterieur, m.logo_exterieur)}</span>
@@ -212,7 +224,7 @@
         const { data: classementSoiree } = await sb.from("classement_soiree")
           .select("*").eq("soiree_id", soiree.id).order("points_soiree", { ascending: false }).limit(5);
         document.getElementById("classementList").innerHTML = rankRowsHtml(classementSoiree, "points_soiree");
-        document.getElementById("rewardLine").innerHTML = `🎯 Score exact sur un match = boisson offerte ! Va choisir la tienne sur ton profil.`;
+        document.getElementById("rewardLine").innerHTML = `${icon("target")} Score exact sur un match = boisson offerte ! Va choisir la tienne sur ton profil.`;
         showPhase("classement");
       }
     }
