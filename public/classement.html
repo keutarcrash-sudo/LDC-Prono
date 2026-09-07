@@ -67,7 +67,7 @@
   /* Podium (top 3) */
   .podium { display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin: 22px 0 8px; }
   .podium-place {
-    display: flex; flex-direction: column; align-items: center; width: 32%; max-width: 160px;
+    display: flex; flex-direction: column; align-items: center; width: 32%; max-width: 180px; min-width: 92px;
     opacity: 0; transform: translateY(18px); animation: podium-in 0.55s ease forwards;
   }
   .podium-place.place-2 { animation-delay: 0.05s; }
@@ -85,18 +85,16 @@
   .place-2 .podium-avatar { border-color: var(--silver); }
   .place-3 .podium-avatar { border-color: var(--bronze); }
   .podium-name { font-weight: 800; font-size: 0.92rem; margin-bottom: 2px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .podium-pts { font-family: 'Bebas Neue', sans-serif; font-size: 1.25rem; color: var(--accent-bright); margin-bottom: 10px; letter-spacing: 0.5px; }
+  .podium-pts { font-family: 'Bebas Neue', sans-serif; font-size: 1.25rem; color: var(--accent-bright); margin-bottom: 10px; letter-spacing: 0.5px; white-space: nowrap; }
   .col.saison .podium-pts { color: var(--gold); }
   .place-1 .podium-pts { font-size: 1.55rem; }
   .podium-bar {
     width: 100%; border-radius: 10px 10px 0 0; border: 1px solid var(--border); border-bottom: none;
     background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
-    display: flex; align-items: flex-start; justify-content: center; padding-top: 6px;
-    font-family: 'Bebas Neue', sans-serif; color: var(--text-muted); font-size: 1.1rem;
   }
-  .place-1 .podium-bar { height: 82px; border-color: var(--gold); background: linear-gradient(180deg, rgba(255,214,0,0.28), rgba(255,214,0,0.04)); color: var(--gold); }
-  .place-2 .podium-bar { height: 58px; border-color: var(--silver); }
-  .place-3 .podium-bar { height: 42px; border-color: var(--bronze); }
+  .place-1 .podium-bar { height: 36px; border-color: var(--gold); background: linear-gradient(180deg, rgba(255,214,0,0.28), rgba(255,214,0,0.04)); }
+  .place-2 .podium-bar { height: 24px; border-color: var(--silver); }
+  .place-3 .podium-bar { height: 16px; border-color: var(--bronze); }
 
   /* Rest of the list (4th+) */
   .rest-list { margin-top: 8px; }
@@ -115,14 +113,17 @@
 
   .empty { color: var(--text-muted); font-style: italic; padding: 24px 4px; font-size: 1.05rem; text-align: center; }
 
+  @media (max-width: 820px) {
+    .columns { flex-direction: column; align-items: stretch; }
+    .col { max-width: 100%; min-width: 0; width: 100%; }
+  }
+
   @media (max-width: 600px) {
     body { padding: 24px 16px 110px; }
     h1 { font-size: 1.9rem; }
     .subtitle { font-size: 0.95rem; }
     .subtitle-row { margin-bottom: 24px; }
-    .col { min-width: 0; padding: 18px 16px 8px; }
-    .podium-avatar { width: 42px; height: 42px; font-size: 1.05rem; }
-    .place-1 .podium-avatar { width: 56px; height: 56px; font-size: 1.4rem; }
+    .col { padding: 18px 16px 8px; }
   }
 
   .bottom-nav {
@@ -211,7 +212,7 @@
               <div class="podium-avatar" style="background: linear-gradient(135deg, ${avatarColor(r.pseudo || "?")}, #0e1524)">${initial}</div>
               <div class="podium-name">${r.pseudo}</div>
               <div class="podium-pts">${pts} pts</div>
-              <div class="podium-bar">${i + 1}</div>
+              <div class="podium-bar"></div>
             </div>
           `;
         }).join("");
