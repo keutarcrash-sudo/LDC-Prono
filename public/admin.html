@@ -286,10 +286,13 @@
 
         new QRCode(block.querySelector(`#qr-${soiree.id}`), { text: link, width: 160, height: 160 });
 
-        const matchIds = (matchs || []).map(m => m.id);
+        // On ne compte les scores exacts que sur les matchs déjà terminés
+        // (score final renseigné) : avant ça, une valeur "points" ne peut
+        // rien signifier de fiable.
+        const finishedMatchIds = (matchs || []).filter(m => m.score_domicile !== null).map(m => m.id);
         let exactCounts = {};
-        if (matchIds.length > 0) {
-          const { data: exactRows } = await sb.from("pronostics").select("match_id").in("match_id", matchIds).eq("points", 5);
+        if (finishedMatchIds.length > 0) {
+          const { data: exactRows } = await sb.from("pronostics").select("match_id").in("match_id", finishedMatchIds).eq("points", 5);
           (exactRows || []).forEach(r => { exactCounts[r.match_id] = (exactCounts[r.match_id] || 0) + 1; });
         }
 
