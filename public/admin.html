@@ -221,6 +221,166 @@
       }
     }
 
+    // Charge une image de logo d'équipe pour l'affiche. Si le site source ne
+    // permet pas l'usage cross-origin (pas d'en-tête CORS), le chargement
+    // échoue proprement et on retombe sur un badge coloré avec l'initiale.
+    function loadImageSafe(url) {
+      return new Promise((resolve) => {
+        if (!url) { resolve(null); return; }
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+    }
+
+    function drawTeamCircle(ctx, x, y, r, img, name) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fillStyle = "#0A0F1C";
+      ctx.fill();
+      ctx.clip();
+      if (img) {
+        const scale = Math.max((r * 2) / img.width, (r * 2) / img.height);
+        const w = img.width * scale, h = img.height * scale;
+        ctx.drawImage(img, x - w / 2, y - h / 2, w, h);
+      } else {
+        const grad = ctx.createLinearGradient(x - r, y - r, x + r, y + r);
+        grad.addColorStop(0, "#1E90FF");
+        grad.addColorStop(1, "#0e4f8f");
+        ctx.fillStyle = grad;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+        ctx.fillStyle = "#fff";
+        ctx.font = `800 ${r}px Arial, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText((name || "?").charAt(0).toUpperCase(), x, y);
+      }
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = "#253758";
+      ctx.lineWidth = 6;
+      ctx.stroke();
+    }
+
+    // Génère une affiche PNG (1920x1080, format TV) pour UN match précis :
+    // logos des deux équipes face à face, VS, heure du coup d'envoi, et un
+    // petit QR pour pronostiquer. À télécharger et mettre sur la TV.
+    async function downloadMatchPoster(soiree, match, btnEl) {
+      const originalLabel = btnEl.textContent;
+      btnEl.textContent = "Génération…";
+      btnEl.disabled = true;
+      try {
+        const poster = document.createElement("canvas");
+        poster.width = 1920;
+        poster.height = 1080;
+        const ctx = poster.getContext("2d");
+
+        const grad = ctx.createLinearGradient(0, 0, 0, poster.height);
+        grad.addColorStop(0, "#0A0F1C");
+        grad.addColorStop(1, "#15223B");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, poster.width, poster.height);
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#8B96AC";
+        ctx.font = "700 34px Arial, sans-serif";
+        ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 90);
+
+        ctx.fillStyle = "#FFD600";
+        ctx.font = "800 48px Arial, sans-serif";
+        ctx.fillText(soiree.label || `Soirée du ${soiree.date}`, poster.width / 2, 155);
+
+        const [homeImg, awayImg] = await Promise.all([
+          loadImageSafe(match.logo_domicile),
+          loadImageSafe(match.logo_exterieur),
+        ]);
+
+        const r = 220;
+        const centerY = 470;
+        const homeX = poster.width / 2 - 420;
+        const awayX = poster.width / 2 + 420;
+        drawTeamCircle(ctx, homeX, centerY, r, homeImg, match.equipe_domicile);
+        drawTeamCircle(ctx, awayX, centerY, r, awayImg, match.equipe_exterieur);
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "800 60px Arial, sans-serif";
+        ctx.fillText(match.equipe_domicile, homeX, centerY + r + 75);
+        ctx.fillText(match.equipe_exterieur, awayX, centerY + r + 75);
+
+        ctx.save();
+        ctx.translate(poster.width / 2, centerY);
+        ctx.fillStyle = "#1E90FF";
+        ctx.beginPath();
+        ctx.arc(0, 0, 85, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#00F0FF";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.fillStyle = "#fff";
+        ctx.font = "800 56px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("VS", 0, 4);
+        ctx.restore();
+
+        const kickoff = new Date(match.coup_envoi).toLocaleString("fr-FR", {
+          weekday: "long", day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit",
+        });
+        ctx.fillStyle = "#00F0FF";
+        ctx.font = "700 42px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`Coup d'envoi : ${kickoff}`, poster.width / 2, centerY + r + 155);
+
+        ctx.fillStyle = "#8B96AC";
+        ctx.font = "600 32px Arial, sans-serif";
+        ctx.fillText(soiree.recompense ? "🎯 " + soiree.recompense : "🎯 Score exact sur ce match = boisson offerte !", poster.width / 2, centerY + r + 205);
+
+        const hidden = document.createElement("div");
+        hidden.style.position = "fixed";
+        hidden.style.left = "-9999px";
+        document.body.appendChild(hidden);
+        const link = `${SITE_BASE_URL}pronostics.html?code=${soiree.code_qr}`;
+        new QRCode(hidden, { text: link, width: 260, height: 260 });
+        const qrCanvas = hidden.querySelector("canvas");
+        const qrImg = hidden.querySelector("img");
+        const qrSize = 210, qrX = poster.width - qrSize - 80, qrY = poster.height - qrSize - 70;
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(qrX - 14, qrY - 14, qrSize + 28, qrSize + 28);
+        if (qrCanvas) ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+        else if (qrImg && qrImg.complete) ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+        document.body.removeChild(hidden);
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.textAlign = "left";
+        ctx.font = "700 28px Arial, sans-serif";
+        ctx.fillText("📱 Scanne pour", qrX, qrY - 34);
+        ctx.fillText("pronostiquer !", qrX, qrY - 2);
+
+        let dataUrl;
+        try {
+          dataUrl = poster.toDataURL("image/png");
+        } catch (secErr) {
+          throw new Error("Impossible de générer l'image (restriction du site source des logos). Réessaie, ou utilise l'affiche QR simple.");
+        }
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `predicto-match-${match.id}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (e) {
+        alert("Erreur : " + e.message);
+      } finally {
+        btnEl.textContent = originalLabel;
+        btnEl.disabled = false;
+      }
+    }
+
     async function fetchMatchesForDate(dateStr) {
       // Passe par la fonction serveur /api/matches (voir api/matches.js) :
       // l'API football-data.org bloque les appels directs depuis un navigateur.
@@ -401,11 +561,15 @@
               <span>-</span>
               <input type="number" min="0" value="${m.score_exterieur ?? ''}" placeholder="-" />
               <button class="secondary btn-save-score">Enregistrer</button>
+              <button class="secondary btn-download-match-poster" type="button" style="padding:6px 10px; font-size:0.75rem;">🖼️ Affiche du match</button>
             </span>
           `;
           const inputs = row.querySelectorAll("input");
           row.querySelector(".btn-save-score").addEventListener("click", () => {
             saveManualScore(m.id, inputs[0].value, inputs[1].value, block.querySelector(".sync-msg"));
+          });
+          row.querySelector(".btn-download-match-poster").addEventListener("click", (e) => {
+            downloadMatchPoster(soiree, m, e.target);
           });
           matchesEl.appendChild(row);
         });

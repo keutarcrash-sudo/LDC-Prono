@@ -210,6 +210,7 @@
 
     let joueur = null;
     let couponIntervals = [];
+    let tonightPollInterval = null;
 
     function showMsg(el, text) {
       el.innerHTML = `<div class="msg err">${text}</div>`;
@@ -234,6 +235,12 @@
       document.getElementById("screen-lookup").hidden = true;
       document.getElementById("screen-profile").hidden = false;
       await renderProfile();
+
+      // Vérifie régulièrement si un résultat vient de tomber, pour que
+      // l'écran de victoire apparaisse tout seul sans que le joueur ait
+      // besoin de rafraîchir manuellement.
+      if (tonightPollInterval) clearInterval(tonightPollInterval);
+      tonightPollInterval = setInterval(renderTonight, 15000);
     }
 
     async function renderProfile() {
@@ -357,6 +364,7 @@
     document.getElementById("btnChangePhone").addEventListener("click", () => {
       couponIntervals.forEach(clearInterval);
       couponIntervals = [];
+      if (tonightPollInterval) { clearInterval(tonightPollInterval); tonightPollInterval = null; }
       document.getElementById("screen-profile").hidden = true;
       document.getElementById("screen-lookup").hidden = false;
     });
