@@ -130,6 +130,27 @@
       el.innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
     }
 
+    // Déclenche le téléchargement d'un <canvas> en PNG via un blob (et non
+    // une data: URL) : sur mobile (Safari notamment), un lien vers une
+    // grosse data: URL est souvent juste "ouvert"/rechargé au lieu d'être
+    // téléchargé. Un blob: URL se télécharge correctement partout.
+    function downloadCanvasPng(canvas, filename) {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error("Impossible de générer l'image.")); return; }
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = blobUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+          resolve();
+        }, "image/png");
+      });
+    }
+
     // Génère une affiche PNG (1920x1080, format TV) avec le QR code de la
     // soirée, pour la mettre sur une clé USB et l'afficher sur une TV sans
     // connexion internet (image fixe, pas de mise à jour en direct).
@@ -206,13 +227,7 @@
 
         document.body.removeChild(hidden);
 
-        const dataUrl = poster.toDataURL("image/png");
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = `predicto-qr-${soiree.code_qr}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        await downloadCanvasPng(poster, `predicto-qr-${soiree.code_qr}.png`);
       } catch (e) {
         alert("Erreur lors de la génération de l'affiche : " + e.message);
       } finally {
@@ -361,18 +376,11 @@
         ctx.fillText("📱 Scanne pour", qrX, qrY - 34);
         ctx.fillText("pronostiquer !", qrX, qrY - 2);
 
-        let dataUrl;
         try {
-          dataUrl = poster.toDataURL("image/png");
+          await downloadCanvasPng(poster, `predicto-match-${match.id}.png`);
         } catch (secErr) {
           throw new Error("Impossible de générer l'image (restriction du site source des logos). Réessaie, ou utilise l'affiche QR simple.");
         }
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = `predicto-match-${match.id}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
       } catch (e) {
         alert("Erreur : " + e.message);
       } finally {
