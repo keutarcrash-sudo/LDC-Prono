@@ -119,6 +119,17 @@ create trigger trg_check_pronostic_timing
 before insert or update on pronostics
 for each row execute function check_pronostic_timing();
 
+-- Bonus "repost Instagram" : double les points de la soirée pour un joueur
+-- qui a repartagé notre story/publication. Validé manuellement par le staff
+-- dans admin.html (l'API Instagram ne permet pas de vérifier ça tout seul).
+create table bonus_repost (
+  id uuid primary key default gen_random_uuid(),
+  joueur_id uuid references joueurs(id) on delete cascade,
+  soiree_id uuid references soirees(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique (joueur_id, soiree_id)
+);
+
 -- ============================================================
 -- Classements
 -- ============================================================
@@ -127,21 +138,21 @@ select
   s.id as soiree_id,
   j.id as joueur_id,
   j.pseudo,
-  sum(p.points) as points_soiree
+  sum(p.points) * case when br.id is not null then 2 else 1 end as points_soiree
 from pronostics p
 join matchs m on m.id = p.match_id
 join soirees s on s.id = m.soiree_id
 join joueurs j on j.id = p.joueur_id
-group by s.id, j.id, j.pseudo;
+left join bonus_repost br on br.joueur_id = j.id and br.soiree_id = s.id
+group by s.id, j.id, j.pseudo, br.id;
 
 create or replace view classement_saison as
 select
-  j.id as joueur_id,
-  j.pseudo,
-  sum(p.points) as points_total
-from pronostics p
-join joueurs j on j.id = p.joueur_id
-group by j.id, j.pseudo
+  joueur_id,
+  pseudo,
+  sum(points_soiree) as points_total
+from classement_soiree
+group by joueur_id, pseudo
 order by points_total desc;
 
 -- ============================================================
@@ -155,6 +166,7 @@ alter table joueurs enable row level security;
 alter table soirees enable row level security;
 alter table matchs enable row level security;
 alter table pronostics enable row level security;
+alter table bonus_repost enable row level security;
 
 create policy "lecture publique joueurs" on joueurs for select using (true);
 create policy "creation publique joueurs" on joueurs for insert with check (true);
@@ -174,6 +186,10 @@ create policy "lecture publique pronostics" on pronostics for select using (true
 create policy "creation publique pronostics" on pronostics for insert with check (true);
 create policy "maj publique pronostics" on pronostics for update using (true);
 
+create policy "lecture publique bonus_repost" on bonus_repost for select using (true);
+create policy "ecriture publique bonus_repost" on bonus_repost for insert with check (true);
+create policy "suppr publique bonus_repost" on bonus_repost for delete using (true);
+
 -- ============================================================
 -- Migration — à coller et exécuter une seule fois dans le SQL
 -- Editor si ta base a été créée avant l'ajout du champ "recompense"
@@ -190,3 +206,42 @@ alter table matchs add column if not exists logo_exterieur text;
 alter table pronostics add column if not exists recompense_choix text;
 alter table pronostics add column if not exists recompense_choisie_at timestamptz;
 alter table soirees add column if not exists active boolean not null default true;
+
+-- Bonus "repost Instagram" (double les points de la soirée). Sans risque de
+-- relancer ce bloc plusieurs fois.
+create table if not exists bonus_repost (
+  id uuid primary key default gen_random_uuid(),
+  joueur_id uuid references joueurs(id) on delete cascade,
+  soiree_id uuid references soirees(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique (joueur_id, soiree_id)
+);
+alter table bonus_repost enable row level security;
+drop policy if exists "lecture publique bonus_repost" on bonus_repost;
+create policy "lecture publique bonus_repost" on bonus_repost for select using (true);
+drop policy if exists "ecriture publique bonus_repost" on bonus_repost;
+create policy "ecriture publique bonus_repost" on bonus_repost for insert with check (true);
+drop policy if exists "suppr publique bonus_repost" on bonus_repost;
+create policy "suppr publique bonus_repost" on bonus_repost for delete using (true);
+
+create or replace view classement_soiree as
+select
+  s.id as soiree_id,
+  j.id as joueur_id,
+  j.pseudo,
+  sum(p.points) * case when br.id is not null then 2 else 1 end as points_soiree
+from pronostics p
+join matchs m on m.id = p.match_id
+join soirees s on s.id = m.soiree_id
+join joueurs j on j.id = p.joueur_id
+left join bonus_repost br on br.joueur_id = j.id and br.soiree_id = s.id
+group by s.id, j.id, j.pseudo, br.id;
+
+create or replace view classement_saison as
+select
+  joueur_id,
+  pseudo,
+  sum(points_soiree) as points_total
+from classement_soiree
+group by joueur_id, pseudo
+order by points_total desc;

@@ -475,6 +475,27 @@
       loadPendingResults();
     }
 
+    async function addBonusRepost(soireeId, phone, msgEl) {
+      phone = (phone || "").trim();
+      if (!phone) { showMsg(msgEl, "Entre le numéro du joueur.", false); return; }
+      const { data: joueur, error: err1 } = await sb.from("joueurs").select("*").eq("phone", phone).maybeSingle();
+      if (err1) { showMsg(msgEl, "Erreur : " + err1.message, false); return; }
+      if (!joueur) { showMsg(msgEl, "Aucun joueur trouvé avec ce numéro. Il doit avoir pronostiqué au moins une fois.", false); return; }
+      const { error: err2 } = await sb.from("bonus_repost").insert({ joueur_id: joueur.id, soiree_id: soireeId });
+      if (err2) {
+        if (err2.code === "23505") showMsg(msgEl, `${joueur.pseudo} a déjà le bonus ce soir.`, false);
+        else showMsg(msgEl, "Erreur : " + err2.message, false);
+        return;
+      }
+      showMsg(msgEl, `🎁 Bonus ajouté pour ${joueur.pseudo} — points de la soirée doublés !`, true);
+      loadSoirees();
+    }
+
+    async function removeBonusRepost(bonusId) {
+      await sb.from("bonus_repost").delete().eq("id", bonusId);
+      loadSoirees();
+    }
+
     async function addManualMatch(soireeId, home, away, kickoffLocal, msgEl) {
       if (!home.trim() || !away.trim() || !kickoffLocal) {
         showMsg(msgEl, "Renseigne les deux équipes et l'heure du coup d'envoi.", false);
@@ -533,6 +554,17 @@
           </div>
           <button class="secondary btn-sync">Actualiser les résultats depuis l'API</button>
           <div class="sync-msg"></div>
+
+          <div class="bonus-section" style="margin-top:16px; padding-top:14px; border-top:1px dashed var(--border);">
+            <h3 style="margin:0 0 8px;">🎁 Bonus repost Instagram (x2 points de la soirée)</h3>
+            <p class="hint" style="margin:0 0 10px;">Le joueur te montre qu'il a repartagé notre story/publication → tu ajoutes son numéro ici, ça double ses points pour cette soirée.</p>
+            <div class="bonus-list"></div>
+            <div class="match-row" style="border-bottom:none; flex-wrap:wrap; gap:8px;">
+              <input type="tel" class="input-bonus-phone" placeholder="Téléphone du joueur" style="width:auto; flex:1; min-width:160px;" />
+              <button class="secondary btn-add-bonus" type="button">🎁 Doubler ses points</button>
+            </div>
+            <div class="bonus-msg"></div>
+          </div>
         `;
         listEl.appendChild(block);
 
@@ -572,6 +604,27 @@
             downloadMatchPoster(soiree, m, e.target);
           });
           matchesEl.appendChild(row);
+        });
+
+        const { data: bonusRows } = await sb.from("bonus_repost").select("id, joueurs(pseudo)").eq("soiree_id", soiree.id);
+        const bonusListEl = block.querySelector(".bonus-list");
+        if (bonusRows && bonusRows.length > 0) {
+          bonusListEl.innerHTML = bonusRows.map(b => `
+            <div class="match-row" style="padding:6px 0;">
+              <span>🎁 ${b.joueurs?.pseudo || "?"}</span>
+              <button class="secondary btn-remove-bonus" data-id="${b.id}" type="button" style="padding:6px 10px; font-size:0.75rem;">Retirer</button>
+            </div>
+          `).join("");
+          bonusListEl.querySelectorAll(".btn-remove-bonus").forEach(btn => {
+            btn.addEventListener("click", () => removeBonusRepost(btn.dataset.id));
+          });
+        } else {
+          bonusListEl.innerHTML = `<p class="hint" style="margin:4px 0 10px;">Aucun bonus repost pour l'instant.</p>`;
+        }
+
+        block.querySelector(".btn-add-bonus").addEventListener("click", () => {
+          const phone = block.querySelector(".input-bonus-phone").value;
+          addBonusRepost(soiree.id, phone, block.querySelector(".bonus-msg"));
         });
 
         block.querySelector(".btn-sync").addEventListener("click", () => syncResults(soiree, matchs || [], block));
