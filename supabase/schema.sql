@@ -150,7 +150,7 @@ create or replace view classement_saison as
 select
   joueur_id,
   pseudo,
-  sum(points_soiree) as points_total
+  sum(points_soiree)::bigint as points_total
 from classement_soiree
 group by joueur_id, pseudo
 order by points_total desc;
@@ -241,7 +241,7 @@ create or replace view classement_saison as
 select
   joueur_id,
   pseudo,
-  sum(points_soiree) as points_total
+  sum(points_soiree)::bigint as points_total
 from classement_soiree
 group by joueur_id, pseudo
 order by points_total desc;
