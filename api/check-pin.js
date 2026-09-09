@@ -8,11 +8,10 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const adminPin = process.env.ADMIN_PIN;
-  if (!adminPin) {
-    res.status(500).json({ error: "ADMIN_PIN non configuré sur Vercel." });
-    return;
-  }
+  // Valeur par défaut pour que ça marche sans configuration Vercel. Pour la
+  // changer plus tard sans toucher au code, ajoute une variable
+  // d'environnement ADMIN_PIN sur Vercel : elle prend le dessus sur celle-ci.
+  const adminPin = process.env.ADMIN_PIN || "7411";
 
   const { pin } = req.body || {};
   const ok = typeof pin === "string" && pin.length > 0 && pin === adminPin;
