@@ -447,19 +447,28 @@
         const byId = {};
         apiMatches.forEach(m => byId[String(m.id)] = m);
 
-        let updated = 0;
+        let updated = 0, noApiId = 0, notFoundInApi = 0, notFinishedYet = 0;
         for (const m of matchs) {
-          const apiMatch = m.external_match_id ? byId[m.external_match_id] : null;
-          if (apiMatch && apiMatch.status === "FINISHED" && apiMatch.score?.fullTime) {
-            const { error } = await sb.from("matchs").update({
-              score_domicile: apiMatch.score.fullTime.home,
-              score_exterieur: apiMatch.score.fullTime.away,
-              statut: "FINISHED",
-            }).eq("id", m.id);
-            if (!error) updated++;
-          }
+          if (m.score_domicile !== null) continue; // déjà renseigné, rien à faire
+          if (!m.external_match_id) { noApiId++; continue; }
+          const apiMatch = byId[m.external_match_id];
+          if (!apiMatch) { notFoundInApi++; continue; }
+          if (apiMatch.status !== "FINISHED" || !apiMatch.score?.fullTime) { notFinishedYet++; continue; }
+          const { error } = await sb.from("matchs").update({
+            score_domicile: apiMatch.score.fullTime.home,
+            score_exterieur: apiMatch.score.fullTime.away,
+            statut: "FINISHED",
+          }).eq("id", m.id);
+          if (!error) updated++;
         }
-        showMsg(msgEl, `${updated} match(s) mis à jour.`, true);
+
+        let msg = `${updated} match(s) mis à jour.`;
+        const notes = [];
+        if (noApiId > 0) notes.push(`${noApiId} match(s) ajouté(s) manuellement (pas de lien vers l'API) — entre leur score directement dans les champs ci-dessous puis "Enregistrer".`);
+        if (notFoundInApi > 0) notes.push(`${notFoundInApi} match(s) introuvable(s) sur l'API pour cette date — vérifie la date de la soirée, ou entre le score à la main.`);
+        if (notFinishedYet > 0) notes.push(`${notFinishedYet} match(s) pas encore marqué(s) "terminé" par l'API — réessaie plus tard, ou entre le score à la main.`);
+        if (notes.length > 0) msg += " " + notes.join(" ");
+        showMsg(msgEl, msg, updated > 0 || notes.length === 0);
         loadSoirees();
       } catch (e) {
         showMsg(msgEl, "Erreur : " + e.message, false);
