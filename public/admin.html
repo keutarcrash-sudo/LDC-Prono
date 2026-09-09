@@ -150,15 +150,14 @@
         showMsg(msgEl, "Import des matchs en cours…", true);
         const apiMatches = await fetchMatchesForDate(dateInput);
 
-        // Une seule soirée active à la fois : la nouvelle devient la soirée courante.
-        await sb.from("soirees").update({ active: false }).neq("id", "00000000-0000-0000-0000-000000000000");
-
+        // La nouvelle soirée est créée INACTIVE : elle ne remplace pas la
+        // soirée en cours. Utilise le bouton "Activer" quand tu es prêt.
         const { data: soiree, error: err1 } = await sb.from("soirees").insert({
           date: dateInput,
           code_qr: randomCode(),
           label: label || null,
           recompense: recompense || null,
-          active: true,
+          active: false,
         }).select().single();
         if (err1) throw err1;
 
@@ -175,9 +174,9 @@
           }));
           const { error: err2 } = await sb.from("matchs").insert(rows);
           if (err2) throw err2;
-          showMsg(msgEl, `Soirée créée avec ${rows.length} match(s) importé(s).`, true);
+          showMsg(msgEl, `Soirée créée avec ${rows.length} match(s) importé(s). Pense à cliquer "Activer" quand tu es prêt à la lancer.`, true);
         } else {
-          showMsg(msgEl, "Soirée créée, mais aucun match Ligue des Champions trouvé à cette date sur l'API. Tu peux ajouter un match manuellement plus bas.", true);
+          showMsg(msgEl, "Soirée créée, mais aucun match Ligue des Champions trouvé à cette date sur l'API. Tu peux ajouter un match manuellement plus bas, puis l'activer.", true);
         }
 
         document.getElementById("date").value = "";
