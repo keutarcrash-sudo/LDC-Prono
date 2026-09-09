@@ -151,6 +151,44 @@
       });
     }
 
+    // Réduit la taille de police jusqu'à ce que le texte tienne sur une
+    // ligne dans maxWidth (évite qu'un nom d'équipe ou un titre déborde).
+    function fitFontSize(ctx, text, maxWidth, weight, family, startPx, minPx) {
+      let size = startPx;
+      ctx.font = `${weight} ${size}px ${family}`;
+      while (size > minPx && ctx.measureText(text).width > maxWidth) {
+        size -= 2;
+        ctx.font = `${weight} ${size}px ${family}`;
+      }
+      return size;
+    }
+
+    // Découpe un texte centré sur plusieurs lignes pour qu'il ne déborde
+    // jamais du cadre (ex: le texte de récompense, de longueur variable).
+    // Retourne la position Y juste après la dernière ligne dessinée.
+    function wrapCenteredText(ctx, text, centerX, y, maxWidth, lineHeight, maxLines) {
+      const words = text.split(" ");
+      const lines = [];
+      let line = "";
+      for (const w of words) {
+        const test = line ? line + " " + w : w;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = w;
+        } else {
+          line = test;
+        }
+      }
+      if (line) lines.push(line);
+      let out = lines;
+      if (maxLines && lines.length > maxLines) {
+        out = lines.slice(0, maxLines);
+        out[out.length - 1] = out[out.length - 1].replace(/\s*\S*$/, "") + "…";
+      }
+      out.forEach((l, i) => ctx.fillText(l, centerX, y + i * lineHeight));
+      return y + out.length * lineHeight;
+    }
+
     // Génère une affiche PNG (1920x1080, format TV) avec le QR code de la
     // soirée, pour la mettre sur une clé USB et l'afficher sur une TV sans
     // connexion internet (image fixe, pas de mise à jour en direct).
@@ -180,26 +218,38 @@
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, poster.width, poster.height);
 
+        // Lueur douce derrière le QR pour donner du relief au fond uni.
+        const glow = ctx.createRadialGradient(poster.width / 2, 470, 60, poster.width / 2, 470, 480);
+        glow.addColorStop(0, "rgba(30,144,255,0.25)");
+        glow.addColorStop(1, "rgba(30,144,255,0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, poster.width, poster.height);
+
         ctx.textAlign = "center";
         ctx.fillStyle = "#FFFFFF";
         ctx.font = "800 100px Arial, sans-serif";
-        ctx.fillText("PREDICTO", poster.width / 2, 150);
+        ctx.fillText("PREDICTO", poster.width / 2, 140);
 
         ctx.fillStyle = "#8B96AC";
-        ctx.font = "600 38px Arial, sans-serif";
-        ctx.fillText("LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 210);
+        ctx.font = "600 36px Arial, sans-serif";
+        ctx.fillText("LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 195);
 
         ctx.fillStyle = "#FFD600";
-        ctx.font = "800 52px Arial, sans-serif";
         const soireeTitle = soiree.label || `Soirée du ${soiree.date}`;
-        ctx.fillText(soireeTitle, poster.width / 2, 285);
+        const titleSize = fitFontSize(ctx, soireeTitle, 1500, "800", "Arial, sans-serif", 50, 30);
+        ctx.font = `800 ${titleSize}px Arial, sans-serif`;
+        ctx.fillText(soireeTitle, poster.width / 2, 265);
 
-        const qrSize = 620;
+        const qrSize = 500;
         const qrX = (poster.width - qrSize) / 2;
-        const qrY = 340;
-        const pad = 26;
+        const qrY = 300;
+        const pad = 24;
+        ctx.save();
+        ctx.shadowColor = "rgba(0,240,255,0.45)";
+        ctx.shadowBlur = 40;
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(qrX - pad, qrY - pad, qrSize + pad * 2, qrSize + pad * 2);
+        ctx.restore();
 
         await new Promise((resolve) => {
           if (qrCanvas) {
@@ -218,12 +268,20 @@
         });
 
         ctx.fillStyle = "#FFFFFF";
-        ctx.font = "800 56px Arial, sans-serif";
-        ctx.fillText("📱 Scanne pour jouer !", poster.width / 2, qrY + qrSize + 95);
+        ctx.font = "800 50px Arial, sans-serif";
+        ctx.fillText("📱 Scanne pour jouer !", poster.width / 2, qrY + qrSize + 70);
 
         ctx.fillStyle = "#8B96AC";
-        ctx.font = "600 32px Arial, sans-serif";
-        ctx.fillText(soiree.recompense || "Score exact sur un match = boisson offerte !", poster.width / 2, qrY + qrSize + 145);
+        ctx.font = "600 28px Arial, sans-serif";
+        wrapCenteredText(
+          ctx,
+          soiree.recompense || "Score exact sur un match = boisson offerte !",
+          poster.width / 2,
+          qrY + qrSize + 125,
+          1500,
+          36,
+          2
+        );
 
         document.body.removeChild(hidden);
 
@@ -236,9 +294,11 @@
       }
     }
 
-    // Charge une image de logo d'équipe pour l'affiche. Si le site source ne
-    // permet pas l'usage cross-origin (pas d'en-tête CORS), le chargement
-    // échoue proprement et on retombe sur un badge coloré avec l'initiale.
+    // Charge une image de logo d'équipe pour l'affiche, via notre relais
+    // /api/crest.js (voir ce fichier) : le site source des logos ne permet
+    // pas de les utiliser directement dans un <canvas> (pas d'en-tête CORS).
+    // Si le chargement échoue quand même, on retombe sur un badge coloré
+    // avec l'initiale de l'équipe.
     function loadImageSafe(url) {
       return new Promise((resolve) => {
         if (!url) { resolve(null); return; }
@@ -246,7 +306,7 @@
         img.crossOrigin = "anonymous";
         img.onload = () => resolve(img);
         img.onerror = () => resolve(null);
-        img.src = url;
+        img.src = `/api/crest?url=${encodeURIComponent(url)}`;
       });
     }
 
@@ -275,11 +335,15 @@
         ctx.fillText((name || "?").charAt(0).toUpperCase(), x, y);
       }
       ctx.restore();
+      ctx.save();
+      ctx.shadowColor = "rgba(0,240,255,0.35)";
+      ctx.shadowBlur = 30;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.strokeStyle = "#253758";
+      ctx.strokeStyle = "#3a5580";
       ctx.lineWidth = 6;
       ctx.stroke();
+      ctx.restore();
     }
 
     // Génère une affiche PNG (1920x1080, format TV) pour UN match précis :
@@ -301,38 +365,52 @@
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, poster.width, poster.height);
 
+        const centerY = 460;
+        const glow = ctx.createRadialGradient(poster.width / 2, centerY, 60, poster.width / 2, centerY, 550);
+        glow.addColorStop(0, "rgba(30,144,255,0.22)");
+        glow.addColorStop(1, "rgba(30,144,255,0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, poster.width, poster.height);
+
         ctx.textAlign = "center";
         ctx.fillStyle = "#8B96AC";
-        ctx.font = "700 34px Arial, sans-serif";
-        ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 90);
+        ctx.font = "700 32px Arial, sans-serif";
+        ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 70);
 
         ctx.fillStyle = "#FFD600";
-        ctx.font = "800 48px Arial, sans-serif";
-        ctx.fillText(soiree.label || `Soirée du ${soiree.date}`, poster.width / 2, 155);
+        const soireeTitle = soiree.label || `Soirée du ${soiree.date}`;
+        const titleSize = fitFontSize(ctx, soireeTitle, 1300, "800", "Arial, sans-serif", 46, 26);
+        ctx.font = `800 ${titleSize}px Arial, sans-serif`;
+        ctx.fillText(soireeTitle, poster.width / 2, 140);
 
         const [homeImg, awayImg] = await Promise.all([
           loadImageSafe(match.logo_domicile),
           loadImageSafe(match.logo_exterieur),
         ]);
 
-        const r = 220;
-        const centerY = 470;
-        const homeX = poster.width / 2 - 420;
-        const awayX = poster.width / 2 + 420;
+        const r = 200;
+        const homeX = poster.width / 2 - 400;
+        const awayX = poster.width / 2 + 400;
         drawTeamCircle(ctx, homeX, centerY, r, homeImg, match.equipe_domicile);
         drawTeamCircle(ctx, awayX, centerY, r, awayImg, match.equipe_exterieur);
 
         ctx.fillStyle = "#FFFFFF";
-        ctx.font = "800 60px Arial, sans-serif";
-        ctx.fillText(match.equipe_domicile, homeX, centerY + r + 75);
-        ctx.fillText(match.equipe_exterieur, awayX, centerY + r + 75);
+        const homeSize = fitFontSize(ctx, match.equipe_domicile, 460, "800", "Arial, sans-serif", 56, 30);
+        ctx.font = `800 ${homeSize}px Arial, sans-serif`;
+        ctx.fillText(match.equipe_domicile, homeX, centerY + r + 70);
+        const awaySize = fitFontSize(ctx, match.equipe_exterieur, 460, "800", "Arial, sans-serif", 56, 30);
+        ctx.font = `800 ${awaySize}px Arial, sans-serif`;
+        ctx.fillText(match.equipe_exterieur, awayX, centerY + r + 70);
 
         ctx.save();
         ctx.translate(poster.width / 2, centerY);
+        ctx.shadowColor = "rgba(0,240,255,0.5)";
+        ctx.shadowBlur = 25;
         ctx.fillStyle = "#1E90FF";
         ctx.beginPath();
         ctx.arc(0, 0, 85, 0, Math.PI * 2);
         ctx.fill();
+        ctx.shadowBlur = 0;
         ctx.strokeStyle = "#00F0FF";
         ctx.lineWidth = 4;
         ctx.stroke();
@@ -347,14 +425,23 @@
           weekday: "long", day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit",
         });
         ctx.fillStyle = "#00F0FF";
-        ctx.font = "700 42px Arial, sans-serif";
+        ctx.font = "700 38px Arial, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(`Coup d'envoi : ${kickoff}`, poster.width / 2, centerY + r + 155);
+        ctx.fillText(`Coup d'envoi : ${kickoff}`, poster.width / 2, centerY + r + 135);
 
         ctx.fillStyle = "#8B96AC";
-        ctx.font = "600 32px Arial, sans-serif";
-        ctx.fillText(soiree.recompense ? "🎯 " + soiree.recompense : "🎯 Score exact sur ce match = boisson offerte !", poster.width / 2, centerY + r + 205);
+        ctx.font = "600 30px Arial, sans-serif";
+        wrapCenteredText(
+          ctx,
+          soiree.recompense ? "🎯 " + soiree.recompense : "🎯 Score exact sur ce match = boisson offerte !",
+          poster.width / 2,
+          centerY + r + 190,
+          1300,
+          36,
+          2
+        );
 
+        // QR en médaillon dans le coin, à l'écart du reste pour ne rien chevaucher.
         const hidden = document.createElement("div");
         hidden.style.position = "fixed";
         hidden.style.left = "-9999px";
@@ -363,18 +450,21 @@
         new QRCode(hidden, { text: link, width: 260, height: 260 });
         const qrCanvas = hidden.querySelector("canvas");
         const qrImg = hidden.querySelector("img");
-        const qrSize = 210, qrX = poster.width - qrSize - 80, qrY = poster.height - qrSize - 70;
+        const qrSize = 170, qrPad = 12, qrX = poster.width - 40 - qrSize, qrY = 40;
+        ctx.save();
+        ctx.shadowColor = "rgba(0,240,255,0.4)";
+        ctx.shadowBlur = 24;
         ctx.fillStyle = "#fff";
-        ctx.fillRect(qrX - 14, qrY - 14, qrSize + 28, qrSize + 28);
+        ctx.fillRect(qrX - qrPad, qrY - qrPad, qrSize + qrPad * 2, qrSize + qrPad * 2);
+        ctx.restore();
         if (qrCanvas) ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
         else if (qrImg && qrImg.complete) ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
         document.body.removeChild(hidden);
 
         ctx.fillStyle = "#FFFFFF";
-        ctx.textAlign = "left";
-        ctx.font = "700 28px Arial, sans-serif";
-        ctx.fillText("📱 Scanne pour", qrX, qrY - 34);
-        ctx.fillText("pronostiquer !", qrX, qrY - 2);
+        ctx.textAlign = "center";
+        ctx.font = "700 26px Arial, sans-serif";
+        ctx.fillText("📱 Scanne pour jouer !", qrX + qrSize / 2, qrY + qrSize + 42);
 
         try {
           await downloadCanvasPng(poster, `predicto-match-${match.id}.png`);
