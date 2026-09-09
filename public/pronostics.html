@@ -568,7 +568,7 @@
 
     document.getElementById("btnShare").addEventListener("click", async () => {
       const text = "🔥 Je viens de pronostiquer sur Predicto à l'Arena 18 ! Viens tenter ta chance toi aussi.";
-      const url = SITE_BASE_URL;
+      const url = `${SITE_BASE_URL}pronostics.html?code=${code}`;
       if (navigator.share) {
         try { await navigator.share({ text, url }); } catch (e) { /* annulé par l'utilisateur */ }
       } else {
