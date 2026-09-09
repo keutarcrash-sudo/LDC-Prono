@@ -110,6 +110,7 @@
   .reward-banner .icon { font-size: 1.5rem; }
   .reward-banner .txt { font-size: 0.85rem; }
   .reward-banner b { color: var(--gold); }
+  .reward-banner .sub { display: block; font-size: 0.72rem; color: var(--text-muted); font-weight: 500; margin-top: 3px; }
 
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
   label { display: block; margin: 12px 0 5px; font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
@@ -236,7 +237,7 @@
     <div class="hero-banner"><span id="heroLabel">Soirée Ligue des Champions</span></div>
     <div class="reward-banner" id="rewardBanner" hidden>
       <span class="icon svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/></svg></span>
-      <span class="txt">À gagner ce soir : <b id="rewardText"></b></span>
+      <span class="txt">🎯 Score exact sur un match = <b id="rewardText"></b><span class="sub">Va la réclamer sur ton profil et montre ton écran au bar.</span></span>
     </div>
     <div class="card">
       <h2 style="font-family:'Bebas Neue',sans-serif; letter-spacing:0.5px; margin:0 0 4px; font-size:1.4rem;" id="welcomeTitle">Bienvenue à l'Arena 18</h2>
@@ -268,7 +269,7 @@
       <div class="confirm-sub" id="confirmSub">Bonne soirée à l'Arena 18.</div>
       <div class="reward-banner" id="rewardBannerConfirm" hidden>
         <span class="icon svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/></svg></span>
-        <span class="txt">À gagner ce soir : <b id="rewardTextConfirm"></b></span>
+        <span class="txt">🎯 Score exact sur un match = <b id="rewardTextConfirm"></b><span class="sub">Va la réclamer sur ton profil et montre ton écran au bar.</span></span>
       </div>
       <div class="share-row">
         <button id="btnShare"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.3 10.7l7.4-4.4M8.3 13.3l7.4 4.4"/></svg></span> Partager</button>

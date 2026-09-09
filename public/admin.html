@@ -130,6 +130,97 @@
       el.innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
     }
 
+    // Génère une affiche PNG (1920x1080, format TV) avec le QR code de la
+    // soirée, pour la mettre sur une clé USB et l'afficher sur une TV sans
+    // connexion internet (image fixe, pas de mise à jour en direct).
+    async function downloadQrPoster(soiree, link, btnEl) {
+      const originalLabel = btnEl.textContent;
+      btnEl.textContent = "Génération…";
+      btnEl.disabled = true;
+      try {
+        const hidden = document.createElement("div");
+        hidden.style.position = "fixed";
+        hidden.style.left = "-9999px";
+        document.body.appendChild(hidden);
+        new QRCode(hidden, { text: link, width: 700, height: 700 });
+
+        // qrcodejs rend de façon synchrone dans un <canvas> (ou un <img> en repli).
+        const qrCanvas = hidden.querySelector("canvas");
+        const qrImg = hidden.querySelector("img");
+
+        const poster = document.createElement("canvas");
+        poster.width = 1920;
+        poster.height = 1080;
+        const ctx = poster.getContext("2d");
+
+        const grad = ctx.createLinearGradient(0, 0, 0, poster.height);
+        grad.addColorStop(0, "#0A0F1C");
+        grad.addColorStop(1, "#15223B");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, poster.width, poster.height);
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "800 100px Arial, sans-serif";
+        ctx.fillText("PREDICTO", poster.width / 2, 150);
+
+        ctx.fillStyle = "#8B96AC";
+        ctx.font = "600 38px Arial, sans-serif";
+        ctx.fillText("LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 210);
+
+        ctx.fillStyle = "#FFD600";
+        ctx.font = "800 52px Arial, sans-serif";
+        const soireeTitle = soiree.label || `Soirée du ${soiree.date}`;
+        ctx.fillText(soireeTitle, poster.width / 2, 285);
+
+        const qrSize = 620;
+        const qrX = (poster.width - qrSize) / 2;
+        const qrY = 340;
+        const pad = 26;
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(qrX - pad, qrY - pad, qrSize + pad * 2, qrSize + pad * 2);
+
+        await new Promise((resolve) => {
+          if (qrCanvas) {
+            ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+            resolve();
+          } else if (qrImg) {
+            if (qrImg.complete) {
+              ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+              resolve();
+            } else {
+              qrImg.onload = () => { ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize); resolve(); };
+            }
+          } else {
+            resolve();
+          }
+        });
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "800 56px Arial, sans-serif";
+        ctx.fillText("📱 Scanne pour jouer !", poster.width / 2, qrY + qrSize + 95);
+
+        ctx.fillStyle = "#8B96AC";
+        ctx.font = "600 32px Arial, sans-serif";
+        ctx.fillText(soiree.recompense || "Score exact sur un match = boisson offerte !", poster.width / 2, qrY + qrSize + 145);
+
+        document.body.removeChild(hidden);
+
+        const dataUrl = poster.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `predicto-qr-${soiree.code_qr}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (e) {
+        alert("Erreur lors de la génération de l'affiche : " + e.message);
+      } finally {
+        btnEl.textContent = originalLabel;
+        btnEl.disabled = false;
+      }
+    }
+
     async function fetchMatchesForDate(dateStr) {
       // Passe par la fonction serveur /api/matches (voir api/matches.js) :
       // l'API football-data.org bloque les appels directs depuis un navigateur.
@@ -270,6 +361,7 @@
           ${rewardBlockHtml}
           <div id="qr-${soiree.id}"></div>
           <div class="link-box">${link}</div>
+          <button class="secondary btn-download-poster" type="button">🖼️ Télécharger l'affiche QR (pour TV sans internet)</button>
           <div class="matches"></div>
           <div class="add-match-form">
             <div class="match-row" style="border-bottom:none; flex-wrap:wrap; gap:8px;">
@@ -319,6 +411,10 @@
         });
 
         block.querySelector(".btn-sync").addEventListener("click", () => syncResults(soiree, matchs || [], block));
+
+        block.querySelector(".btn-download-poster").addEventListener("click", (e) => {
+          downloadQrPoster(soiree, link, e.target);
+        });
 
         block.querySelector(".btn-add-match").addEventListener("click", () => {
           const home = block.querySelector(".input-home").value;
