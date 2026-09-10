@@ -142,6 +142,22 @@
   .rank-line { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .rank-line:last-child { border-bottom: none; }
 
+  .team-badge { width: 20px; height: 20px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--bg); vertical-align: middle; }
+  .team-badge img { width: 100%; height: 100%; object-fit: contain; }
+  .team-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 0.65rem; background: linear-gradient(135deg, var(--accent), #0e4f8f); color: white; }
+
+  .history-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .history-row:last-child { border-bottom: none; }
+  .history-date { color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+  .history-teams { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.9rem; flex-wrap: wrap; }
+  .history-pred { color: var(--text-muted); font-size: 0.78rem; margin-top: 3px; }
+  .history-pts { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 999px; flex-shrink: 0; white-space: nowrap; }
+  .history-pts.pts-five { background: rgba(255,214,0,0.18); color: var(--gold); }
+  .history-pts.pts-three { background: rgba(30,144,255,0.18); color: var(--accent-bright); }
+  .history-pts.pts-one { background: rgba(139,150,172,0.15); color: var(--text-muted); }
+  .history-pts.pts-zero { background: rgba(255,92,108,0.12); color: var(--danger); }
+  .history-pts.pts-pending { background: rgba(139,150,172,0.12); color: var(--text-muted); font-family: 'Manrope', sans-serif; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -184,6 +200,11 @@
       <div id="tonightBody"></div>
     </div>
 
+    <div class="card" id="historyCard" hidden>
+      <div class="section-title">📜 Historique de mes pronostics</div>
+      <div id="historyList"></div>
+    </div>
+
     <button class="ghost" id="btnChangePhone">🔄 Changer de numéro</button>
   </div>
 
@@ -214,6 +235,15 @@
 
     function showMsg(el, text) {
       el.innerHTML = `<div class="msg err">${text}</div>`;
+    }
+
+    function teamBadge(name, logoUrl) {
+      const initial = (name || "?").charAt(0).toUpperCase();
+      const fallback = `<span class="team-fallback" style="${logoUrl ? "display:none;" : ""}">${initial}</span>`;
+      const img = logoUrl
+        ? `<img src="${logoUrl}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />`
+        : "";
+      return `<span class="team-badge">${img}${fallback}</span>`;
     }
 
     function avatarColor(seed) {
@@ -258,6 +288,53 @@
       document.getElementById("statSoirees").textContent = soireeIds.size;
 
       await renderTonight();
+      await renderHistory();
+    }
+
+    async function renderHistory() {
+      const card = document.getElementById("historyCard");
+      const listEl = document.getElementById("historyList");
+      const { data: pronos, error } = await sb
+        .from("pronostics")
+        .select("*, matchs(equipe_domicile, equipe_exterieur, logo_domicile, logo_exterieur, score_domicile, score_exterieur, coup_envoi, soirees(label, date))")
+        .eq("joueur_id", joueur.id)
+        .order("coup_envoi", { foreignTable: "matchs", ascending: false });
+
+      if (error || !pronos || pronos.length === 0) {
+        card.hidden = true;
+        return;
+      }
+      card.hidden = false;
+
+      listEl.innerHTML = pronos.filter(p => p.matchs).map(p => {
+        const m = p.matchs;
+        const finished = m.score_domicile !== null;
+        const dateStr = new Date(m.coup_envoi).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+        const soireeLabel = m.soirees?.label || (m.soirees?.date ? `Soirée du ${m.soirees.date}` : "");
+
+        let ptsClass = "pts-pending", ptsLabel = "En attente";
+        if (finished) {
+          if (p.points === 5) { ptsClass = "pts-five"; ptsLabel = "🎯 5 pts"; }
+          else if (p.points === 3) { ptsClass = "pts-three"; ptsLabel = "3 pts"; }
+          else if (p.points === 1) { ptsClass = "pts-one"; ptsLabel = "1 pt"; }
+          else { ptsClass = "pts-zero"; ptsLabel = "0 pt"; }
+        }
+
+        const predLine = finished
+          ? `Ton prono : ${p.score_domicile_predit}-${p.score_exterieur_predit} · Résultat : ${m.score_domicile}-${m.score_exterieur}`
+          : `Ton prono : ${p.score_domicile_predit}-${p.score_exterieur_predit}`;
+
+        return `
+          <div class="history-row">
+            <div class="history-info">
+              <div class="history-date">${dateStr}${soireeLabel ? " — " + soireeLabel : ""}</div>
+              <div class="history-teams">${teamBadge(m.equipe_domicile, m.logo_domicile)} ${m.equipe_domicile} vs ${teamBadge(m.equipe_exterieur, m.logo_exterieur)} ${m.equipe_exterieur}</div>
+              <div class="history-pred">${predLine}</div>
+            </div>
+            <div class="history-pts ${ptsClass}">${ptsLabel}</div>
+          </div>
+        `;
+      }).join("");
     }
 
     function confettiHtml() {
