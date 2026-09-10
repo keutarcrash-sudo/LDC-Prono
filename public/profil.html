@@ -374,8 +374,8 @@
 
       if (exactWins.length === 0) {
         body.innerHTML = stillPending
-          ? `<p class="hint" style="margin:0;"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span> En attente des résultats… Un score exact = une boisson offerte !</p>`
-          : `<p class="hint" style="margin:0;">Pas de score exact ce soir. Retente ta chance à la prochaine soirée !</p>`;
+          ? `<p class="hint" style="margin:0;"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span> En attente des résultats… Score exact = boisson offerte. Assume ton prono !</p>`
+          : `<p class="hint" style="margin:0;">Pas de score exact ce soir. Reviens la semaine prochaine tenter le coup à nouveau !</p>`;
         return;
       }
 
@@ -390,7 +390,7 @@
             <div class="victory-card">
               ${confettiHtml()}
               <div class="victory-trophy">🎉</div>
-              <div class="victory-title">Score exact !</div>
+              <div class="victory-title">🎯 Masterclass !</div>
               <div class="victory-match">${m.equipe_domicile} ${p.score_domicile_predit} - ${p.score_exterieur_predit} ${m.equipe_exterieur}</div>
               <p style="margin:8px 0 0; font-size:0.85rem;">Choisis ta récompense :</p>
               <div class="choice-grid">
@@ -413,7 +413,7 @@
           wrap.innerHTML = `
             <div class="coupon">
               <div class="trophy"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/></svg></span></div>
-              <div class="title">Gagnant score exact</div>
+              <div class="title">T'avais vu juste.</div>
               <div class="live-date">${dateStr}</div>
               <div class="victory-match">${m.equipe_domicile} ${p.score_domicile_predit} - ${p.score_exterieur_predit} ${m.equipe_exterieur}</div>
               <div class="reward-name-big">${REWARD_LABELS[p.recompense_choix] || p.recompense_choix}</div>

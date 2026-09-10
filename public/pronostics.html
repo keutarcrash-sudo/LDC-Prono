@@ -197,6 +197,7 @@
   .confirm-icon { font-size: 4rem; text-align: center; margin-bottom: 8px; animation: pop-in 0.5s ease-out; }
   .confirm-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.9rem; text-align: center; letter-spacing: 0.5px; color: var(--success); margin: 0 0 6px; }
   .confirm-sub { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; }
+  .confirm-kicker { text-align: center; color: var(--gold); font-weight: 800; font-size: 0.75rem; letter-spacing: 1.6px; text-transform: uppercase; margin: -2px 0 10px; }
   .share-row { display: flex; gap: 10px; flex-wrap: wrap; }
   .share-row button { flex: 1; min-width: 130px; }
 
@@ -245,7 +246,7 @@
     </div>
     <div class="card">
       <h2 style="font-family:'Bebas Neue',sans-serif; letter-spacing:0.5px; margin:0 0 4px; font-size:1.4rem;" id="welcomeTitle">Bienvenue à l'Arena 18</h2>
-      <p class="hint" id="welcomeSubtitle">Entre ton pseudo et ton numéro pour commencer.</p>
+      <p class="hint" id="welcomeSubtitle">Un pseudo, un numéro, et prouve que tu connais le foot.</p>
       <label for="pseudo">Ton pseudo</label>
       <input type="text" id="pseudo" placeholder="ex: Julien" maxlength="30" />
       <label for="phone">Ton téléphone</label>
@@ -261,7 +262,7 @@
 
   <section id="screen-pronostics" hidden>
     <div id="matchesContainer"></div>
-    <button id="btnSubmit">Valider mes pronostics</button>
+    <button id="btnSubmit">Assume ton prono</button>
     <div id="submitMsg"></div>
   </section>
 
@@ -270,6 +271,7 @@
     <div class="card">
       <div class="confirm-icon"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg></span></div>
       <div class="confirm-title">Pronostics enregistrés !</div>
+      <div class="confirm-kicker">Assume ton prono.</div>
       <div class="confirm-sub" id="confirmSub">Bonne soirée à l'Arena 18.</div>
       <div class="reward-banner" id="rewardBannerConfirm" hidden>
         <span class="icon svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/></svg></span>
@@ -559,7 +561,7 @@
         const { error: pErr } = await sb.from("pronostics").upsert(rows, { onConflict: "joueur_id,match_id" });
         if (pErr) throw pErr;
 
-        document.getElementById("confirmSub").textContent = `${rows.length} match(s) pronostiqué(s). Rendez-vous en fin de soirée pour le classement !`;
+        document.getElementById("confirmSub").textContent = `${rows.length} match(s) pronostiqué(s). Rendez-vous en fin de soirée pour voir qui évite la Zone Footix !`;
         goToStep("confirm");
       } catch (e) {
         showMsg(msgEl, "Erreur : " + e.message, false);
