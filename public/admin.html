@@ -381,7 +381,10 @@
         drawPosterFrame(ctx, poster.width, poster.height);
 
         ctx.textAlign = "center";
-        await drawIconTitle(ctx, "trophy", "#FFD600", "PREDICTO", "#FFFFFF", "800 122px Arial, sans-serif", poster.width / 2, 132, 88, 24, 18, "#05070E", 7);
+        withTextShadow(ctx, 18, () => {
+          ctx.font = "800 122px Arial, sans-serif";
+          fillTextPoster(ctx, "PREDICTO", poster.width / 2, 132, "#FFFFFF", "#05070E", 7);
+        });
 
         withTextShadow(ctx, 8, () => {
           ctx.fillStyle = "#D6DCF0";
@@ -724,7 +727,10 @@
         drawPosterFrame(ctx, poster.width, poster.height);
 
         ctx.textAlign = "center";
-        await drawIconTitle(ctx, "trophy", "#FFD600", "PREDICTO", "#FFFFFF", "800 90px Arial, sans-serif", poster.width / 2, 330, 66, 20, 16, "#05070E", 6);
+        withTextShadow(ctx, 16, () => {
+          ctx.font = "800 90px Arial, sans-serif";
+          fillTextPoster(ctx, "PREDICTO", poster.width / 2, 330, "#FFFFFF", "#05070E", 6);
+        });
 
         withTextShadow(ctx, 8, () => {
           ctx.fillStyle = "#D6DCF0";
