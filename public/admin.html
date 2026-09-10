@@ -705,6 +705,153 @@
       return colors[Math.abs(hash) % colors.length];
     }
 
+    // Génère un visuel vertical (1080x1920, format story Instagram) pour
+    // teaser un match à venir — délibérément SANS QR code : le but est de
+    // faire venir les gens à l'Arena, pas de les laisser jouer de chez eux.
+    // Respecte les zones "sûres" d'Instagram (~250px en haut et en bas,
+    // réservées à l'interface — pseudo, réponse, etc.) en n'y plaçant rien.
+    async function downloadStoryPoster(soiree, match, btnEl) {
+      const originalLabel = btnEl.textContent;
+      btnEl.textContent = "Génération…";
+      btnEl.disabled = true;
+      try {
+        const poster = document.createElement("canvas");
+        poster.width = 1080;
+        poster.height = 1920;
+        const ctx = poster.getContext("2d");
+
+        await drawPosterBackground(ctx, poster.width, poster.height);
+        drawPosterFrame(ctx, poster.width, poster.height);
+
+        ctx.textAlign = "center";
+        await drawIconTitle(ctx, "trophy", "#FFD600", "PREDICTO", "#FFFFFF", "800 90px Arial, sans-serif", poster.width / 2, 330, 66, 20, 16, "#05070E", 6);
+
+        withTextShadow(ctx, 8, () => {
+          ctx.fillStyle = "#D6DCF0";
+          ctx.font = "700 26px Arial, sans-serif";
+          ctx.fillText("LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 368);
+        });
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,214,0,0.55)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(poster.width / 2 - 150, 386);
+        ctx.lineTo(poster.width / 2 + 150, 386);
+        ctx.stroke();
+        ctx.restore();
+
+        withTextShadow(ctx, 8, () => {
+          ctx.fillStyle = "#FFD600";
+          ctx.font = "800 32px Arial, sans-serif";
+          ctx.fillText("CE SOIR À L'ARENA", poster.width / 2, 440);
+        });
+
+        const [homeImg, awayImg] = await Promise.all([
+          loadImageSafe(match.logo_domicile),
+          loadImageSafe(match.logo_exterieur),
+        ]);
+
+        const centerY = 720;
+        const r = 170;
+        const homeX = poster.width / 2 - 295;
+        const awayX = poster.width / 2 + 295;
+        drawTeamCircle(ctx, homeX, centerY, r, homeImg, match.equipe_domicile);
+        drawTeamCircle(ctx, awayX, centerY, r, awayImg, match.equipe_exterieur);
+
+        ctx.save();
+        ctx.translate(poster.width / 2, centerY);
+        ctx.shadowColor = "rgba(0,240,255,0.5)";
+        ctx.shadowBlur = 22;
+        ctx.fillStyle = "#1E90FF";
+        ctx.beginPath();
+        ctx.arc(0, 0, 62, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#00F0FF";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.fillStyle = "#fff";
+        ctx.font = "800 42px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("VS", 0, 3);
+        ctx.textBaseline = "alphabetic";
+        ctx.restore();
+
+        withTextShadow(ctx, 8, () => {
+          ctx.fillStyle = "#FFFFFF";
+          const homeSize = fitFontSize(ctx, match.equipe_domicile, 340, "800", "Arial, sans-serif", 40, 24);
+          ctx.font = `800 ${homeSize}px Arial, sans-serif`;
+          ctx.fillText(match.equipe_domicile, homeX, centerY + r + 66);
+          const awaySize = fitFontSize(ctx, match.equipe_exterieur, 340, "800", "Arial, sans-serif", 40, 24);
+          ctx.font = `800 ${awaySize}px Arial, sans-serif`;
+          ctx.fillText(match.equipe_exterieur, awayX, centerY + r + 66);
+        });
+
+        const kickoffDate = new Date(match.coup_envoi);
+        const kickoffTime = kickoffDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+        const kickoffDay = kickoffDate.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "long" });
+
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#8B96AC";
+          ctx.font = "800 26px Arial, sans-serif";
+          ctx.fillText("COUP D'ENVOI", poster.width / 2, centerY + r + 140);
+        });
+        withTextShadow(ctx, 14, () => {
+          ctx.font = "800 108px Arial, sans-serif";
+          fillTextPoster(ctx, kickoffTime, poster.width / 2, centerY + r + 250, "#FFFFFF", "#05070E", 7);
+        });
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#D6DCF0";
+          ctx.font = "700 32px Arial, sans-serif";
+          ctx.fillText(kickoffDay.charAt(0).toUpperCase() + kickoffDay.slice(1), poster.width / 2, centerY + r + 300);
+        });
+
+        const bannerTop = centerY + r + 360;
+        const bannerHeight = 230;
+        ctx.save();
+        ctx.fillStyle = "rgba(255,214,0,0.12)";
+        ctx.strokeStyle = "rgba(255,214,0,0.65)";
+        ctx.lineWidth = 3;
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(poster.width / 2 - 460, bannerTop, 920, bannerHeight, 18);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.fillRect(poster.width / 2 - 460, bannerTop, 920, bannerHeight);
+          ctx.strokeRect(poster.width / 2 - 460, bannerTop, 920, bannerHeight);
+        }
+        ctx.restore();
+
+        await drawIconTitle(ctx, "target", "#FFD600", "VIENS PRONOSTIQUER", "#FFFFFF", "800 42px Arial, sans-serif", poster.width / 2, bannerTop + 78, 46, 16, 6);
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "800 34px Arial, sans-serif";
+          ctx.fillText("POUR GAGNER À L'ARENA 18 !", poster.width / 2, bannerTop + 136);
+        });
+        withTextShadow(ctx, 4, () => {
+          ctx.fillStyle = "#D6DCF0";
+          ctx.font = "600 26px Arial, sans-serif";
+          ctx.fillText("🍺 Score exact = boisson offerte", poster.width / 2, bannerTop + 182);
+        });
+
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#FFD600";
+          ctx.font = "italic 700 30px Arial, sans-serif";
+          ctx.fillText("Tu penses connaître le score ?", poster.width / 2, bannerTop + bannerHeight + 70);
+          ctx.fillText("Prouve-le.", poster.width / 2, bannerTop + bannerHeight + 112);
+        });
+
+        await downloadCanvasPng(poster, `predicto-story-${match.id}.png`);
+      } catch (e) {
+        alert("Erreur : " + e.message);
+      } finally {
+        btnEl.textContent = originalLabel;
+        btnEl.disabled = false;
+      }
+    }
+
     // Génère une affiche PNG (1920x1080) du classement de la soirée, avec le
     // podium et la Zone Footix — à partager sur les réseaux ou mettre sur la
     // TV entre deux matchs.
@@ -1177,6 +1324,7 @@
               <input type="number" min="0" value="${m.score_exterieur ?? ''}" placeholder="-" />
               <button class="secondary btn-save-score">Enregistrer</button>
               <button class="secondary btn-download-match-poster" type="button" style="padding:6px 10px; font-size:0.75rem;">🖼️ Affiche du match</button>
+              <button class="secondary btn-download-story-poster" type="button" style="padding:6px 10px; font-size:0.75rem;">📱 Story (sans QR)</button>
             </span>
           `;
           const inputs = row.querySelectorAll("input");
@@ -1185,6 +1333,9 @@
           });
           row.querySelector(".btn-download-match-poster").addEventListener("click", (e) => {
             downloadMatchPoster(soiree, m, e.target);
+          });
+          row.querySelector(".btn-download-story-poster").addEventListener("click", (e) => {
+            downloadStoryPoster(soiree, m, e.target);
           });
           matchesEl.appendChild(row);
         });
