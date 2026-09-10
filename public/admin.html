@@ -263,6 +263,34 @@
       ctx.restore();
     }
 
+    // Petit rivet lumineux (cf. les cartes de match "plaque rivetée" du
+    // site) — sert d'accent graphique répété aux coins d'un cadre.
+    function drawRivet(ctx, x, y, color) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 8);
+      g.addColorStop(0, color.replace("1)", "0.9)"));
+      g.addColorStop(1, color.replace("1)", "0)"));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Cadre décoratif avec rivets aux coins, pour donner à l'affiche un
+    // vrai bord plutôt qu'une image qui saigne jusqu'au bord du cadre.
+    function drawPosterFrame(ctx, w, h) {
+      const m = 34;
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,214,0,0.4)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(m, m, w - m * 2, h - m * 2);
+      ctx.restore();
+      [[m, m], [w - m, m], [m, h - m], [w - m, h - m]].forEach(([x, y]) => drawRivet(ctx, x, y, "rgba(255,214,0,1)"));
+    }
+
     // Génère une affiche PNG (1920x1080, format TV) avec le QR code de la
     // soirée, pour la mettre sur une clé USB et l'afficher sur une TV sans
     // connexion internet (image fixe, pas de mise à jour en direct).
@@ -287,38 +315,63 @@
         const ctx = poster.getContext("2d");
 
         await drawPosterBackground(ctx, poster.width, poster.height);
+        drawPosterFrame(ctx, poster.width, poster.height);
 
         ctx.textAlign = "center";
-        withTextShadow(ctx, 18, () => {
+        withTextShadow(ctx, 16, () => {
           ctx.fillStyle = "#FFFFFF";
-          ctx.font = "800 108px Arial, sans-serif";
-          ctx.fillText("PREDICTO", poster.width / 2, 140);
+          ctx.font = "800 92px Arial, sans-serif";
+          ctx.fillText("🏆 PREDICTO", poster.width / 2, 112);
         });
 
-        withTextShadow(ctx, 10, () => {
+        withTextShadow(ctx, 8, () => {
           ctx.fillStyle = "#D6DCF0";
-          ctx.font = "700 36px Arial, sans-serif";
-          ctx.fillText("LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 195);
+          ctx.font = "700 32px Arial, sans-serif";
+          ctx.fillText("LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 152);
         });
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,214,0,0.55)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(poster.width / 2 - 230, 172);
+        ctx.lineTo(poster.width / 2 + 230, 172);
+        ctx.stroke();
+        ctx.restore();
 
         const soireeTitle = soiree.label || `Soirée du ${soiree.date}`;
-        const titleSize = fitFontSize(ctx, soireeTitle, 1500, "800", "Arial, sans-serif", 52, 30);
-        withTextShadow(ctx, 14, () => {
+        const titleSize = fitFontSize(ctx, soireeTitle, 1500, "800", "Arial, sans-serif", 44, 26);
+        withTextShadow(ctx, 12, () => {
           ctx.fillStyle = "#FFD600";
           ctx.font = `800 ${titleSize}px Arial, sans-serif`;
-          ctx.fillText(soireeTitle, poster.width / 2, 268);
+          ctx.fillText(soireeTitle, poster.width / 2, 220);
         });
 
-        const qrSize = 500;
+        const qrSize = 380;
         const qrX = (poster.width - qrSize) / 2;
-        const qrY = 300;
-        const pad = 24;
+        const qrY = 270;
+        const pad = 20;
+
+        // Halo doux derrière le QR pour le faire ressortir de la photo.
+        const qrGlow = ctx.createRadialGradient(poster.width / 2, qrY + qrSize / 2, 40, poster.width / 2, qrY + qrSize / 2, 340);
+        qrGlow.addColorStop(0, "rgba(0,240,255,0.28)");
+        qrGlow.addColorStop(1, "rgba(0,240,255,0)");
+        ctx.fillStyle = qrGlow;
+        ctx.fillRect(0, 0, poster.width, poster.height);
+
         ctx.save();
-        ctx.shadowColor = "rgba(0,240,255,0.45)";
-        ctx.shadowBlur = 40;
+        ctx.shadowColor = "rgba(0,240,255,0.5)";
+        ctx.shadowBlur = 36;
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(qrX - pad, qrY - pad, qrSize + pad * 2, qrSize + pad * 2);
         ctx.restore();
+        ctx.strokeStyle = "rgba(0,240,255,0.7)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(qrX - pad, qrY - pad, qrSize + pad * 2, qrSize + pad * 2);
+        [
+          [qrX - pad, qrY - pad], [qrX + qrSize + pad, qrY - pad],
+          [qrX - pad, qrY + qrSize + pad], [qrX + qrSize + pad, qrY + qrSize + pad],
+        ].forEach(([x, y]) => drawRivet(ctx, x, y, "rgba(0,240,255,1)"));
 
         await new Promise((resolve) => {
           if (qrCanvas) {
@@ -336,24 +389,48 @@
           }
         });
 
-        withTextShadow(ctx, 12, () => {
+        const qrBottom = qrY + qrSize + pad;
+        withTextShadow(ctx, 10, () => {
           ctx.fillStyle = "#FFFFFF";
-          ctx.font = "800 50px Arial, sans-serif";
-          ctx.fillText("📱 Scanne pour jouer !", poster.width / 2, qrY + qrSize + 70);
+          ctx.font = "800 44px Arial, sans-serif";
+          ctx.fillText("📱 Scanne pour jouer !", poster.width / 2, qrBottom + 62);
         });
 
-        withTextShadow(ctx, 8, () => {
-          ctx.fillStyle = "#E4E8F5";
-          ctx.font = "700 28px Arial, sans-serif";
-          wrapCenteredText(
-            ctx,
-            soiree.recompense || "Score exact sur un match = boisson offerte !",
-            poster.width / 2,
-            qrY + qrSize + 125,
-            1500,
-            36,
-            2
-          );
+        // Rangée à deux colonnes façon "règles du jeu", séparées par un
+        // filet vertical — plus de matière visuelle qu'un simple paragraphe.
+        const rowY = qrBottom + 155;
+        const leftX = poster.width / 2 - 250;
+        const rightX = poster.width / 2 + 250;
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(poster.width / 2, rowY - 58);
+        ctx.lineTo(poster.width / 2, rowY + 78);
+        ctx.stroke();
+        ctx.restore();
+
+        withTextShadow(ctx, 10, () => {
+          ctx.font = "62px Arial, sans-serif";
+          ctx.fillText("🎯", leftX, rowY);
+          ctx.fillText("🏆", rightX, rowY);
+        });
+        const rewardShort = soiree.recompense && soiree.recompense.length <= 42 ? soiree.recompense : "= 1 boisson offerte";
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "800 28px Arial, sans-serif";
+          ctx.fillText("SCORE EXACT", leftX, rowY + 44);
+          ctx.fillText("CLASSEMENT PREDICTO", rightX, rowY + 44);
+          ctx.fillStyle = "#D6DCF0";
+          ctx.font = "600 23px Arial, sans-serif";
+          ctx.fillText(rewardShort, leftX, rowY + 76);
+          ctx.fillText("cumulé sur la saison", rightX, rowY + 76);
+        });
+
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#FFD600";
+          ctx.font = "italic 700 27px Arial, sans-serif";
+          ctx.fillText("Tu penses connaître le score ? Prouve-le.", poster.width / 2, rowY + 148);
         });
 
         document.body.removeChild(hidden);
