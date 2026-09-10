@@ -489,6 +489,256 @@
       }
     }
 
+    const FOOTIX_QUIPS = [
+      "On croit encore en toi.",
+      "Il reste toute une saison pour remonter.",
+      "La Zone Footix, mais avec le sourire.",
+      "Prochain match : une nouvelle chance de sauver ton honneur.",
+      "La honte est éternelle. Le classement aussi.",
+    ];
+    function quipFor(seed) {
+      let hash = 0;
+      for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) % FOOTIX_QUIPS.length;
+      return FOOTIX_QUIPS[Math.abs(hash) % FOOTIX_QUIPS.length];
+    }
+    function avatarGradient(seed) {
+      const colors = ["#1E90FF", "#00E6A1", "#FFD600", "#7C6CE0", "#FF5C6C", "#00C2D1"];
+      let hash = 0;
+      for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) % colors.length;
+      return colors[Math.abs(hash) % colors.length];
+    }
+
+    // Génère une affiche PNG (1920x1080) du classement de la soirée, avec le
+    // podium et la Zone Footix — à partager sur les réseaux ou mettre sur la
+    // TV entre deux matchs.
+    async function downloadClassementPoster(soiree, btnEl) {
+      const originalLabel = btnEl.textContent;
+      btnEl.textContent = "Génération…";
+      btnEl.disabled = true;
+      try {
+        const { data: rows, error } = await sb.from("classement_soiree")
+          .select("*").eq("soiree_id", soiree.id).order("points_soiree", { ascending: false }).limit(10);
+        if (error) throw error;
+        if (!rows || rows.length === 0) {
+          alert("Personne n'a encore pronostiqué ce soir — pas de classement à afficher pour l'instant.");
+          return;
+        }
+
+        const poster = document.createElement("canvas");
+        poster.width = 1920;
+        poster.height = 1080;
+        const ctx = poster.getContext("2d");
+        const grad = ctx.createLinearGradient(0, 0, 0, poster.height);
+        grad.addColorStop(0, "#0A0F1C");
+        grad.addColorStop(1, "#15223B");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, poster.width, poster.height);
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#8B96AC";
+        ctx.font = "700 32px Arial, sans-serif";
+        ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 70);
+
+        ctx.fillStyle = "#FFD600";
+        const title = soiree.label || `Soirée du ${soiree.date}`;
+        const titleSize = fitFontSize(ctx, title, 1400, "800", "Arial, sans-serif", 40, 24);
+        ctx.font = `800 ${titleSize}px Arial, sans-serif`;
+        ctx.fillText(title, poster.width / 2, 122);
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "800 62px Arial, sans-serif";
+        ctx.fillText("🏆 CLASSEMENT PREDICTO", poster.width / 2, 200);
+
+        const top3 = rows.slice(0, 3);
+        const order = [1, 0, 2];
+        const slots = order.filter(i => top3[i]);
+        const slotW = 380;
+        const startX = poster.width / 2 - ((slots.length - 1) * slotW) / 2;
+        slots.forEach((rankIdx, slotPos) => {
+          const r = top3[rankIdx];
+          const x = startX + slotPos * slotW;
+          const isFirst = rankIdx === 0;
+          const radius = isFirst ? 88 : 70;
+          const y = isFirst ? 330 : 348;
+          const medal = ["🥇", "🥈", "🥉"][rankIdx];
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.closePath();
+          const g = ctx.createLinearGradient(x - radius, y - radius, x + radius, y + radius);
+          g.addColorStop(0, avatarGradient(r.pseudo || "?"));
+          g.addColorStop(1, "#0e1524");
+          ctx.fillStyle = g;
+          ctx.fill();
+          if (isFirst) {
+            ctx.shadowColor = "rgba(255,214,0,0.6)";
+            ctx.shadowBlur = 28;
+            ctx.strokeStyle = "#FFD600";
+            ctx.lineWidth = 5;
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          ctx.fillStyle = "#fff";
+          ctx.font = `800 ${isFirst ? 52 : 40}px Arial, sans-serif`;
+          ctx.textBaseline = "middle";
+          ctx.fillText((r.pseudo || "?").charAt(0).toUpperCase(), x, y);
+          ctx.textBaseline = "alphabetic";
+
+          ctx.font = "800 32px Arial, sans-serif";
+          ctx.fillStyle = "#fff";
+          ctx.fillText(`${medal} ${r.pseudo}`, x, y + radius + 48);
+          ctx.fillStyle = isFirst ? "#FFD600" : "#00F0FF";
+          ctx.font = `800 ${isFirst ? 38 : 30}px Arial, sans-serif`;
+          ctx.fillText(`${r.points_soiree ?? 0} pts`, x, y + radius + 90);
+          if (isFirst) {
+            ctx.fillStyle = "#FFD600";
+            ctx.font = "700 22px Arial, sans-serif";
+            ctx.fillText("👑 ROI DU PRONO", x, y + radius + 122);
+          }
+        });
+
+        const rest = rows.slice(3, 10);
+        let listY = 610;
+        rest.forEach((r, idx) => {
+          ctx.textAlign = "left";
+          ctx.fillStyle = "#8B96AC";
+          ctx.font = "700 28px Arial, sans-serif";
+          ctx.fillText(`${idx + 4}`, poster.width / 2 - 360, listY);
+          ctx.fillStyle = "#fff";
+          ctx.font = "700 30px Arial, sans-serif";
+          ctx.fillText(r.pseudo, poster.width / 2 - 310, listY);
+          ctx.textAlign = "right";
+          ctx.fillStyle = "#00F0FF";
+          ctx.font = "800 30px Arial, sans-serif";
+          ctx.fillText(`${r.points_soiree ?? 0} pts`, poster.width / 2 + 360, listY);
+          listY += 44;
+        });
+
+        if (rows.length >= 4) {
+          const last = rows[rows.length - 1];
+          const footixY = Math.max(listY + 40, 900);
+          ctx.strokeStyle = "rgba(255,92,108,0.4)";
+          ctx.setLineDash([10, 8]);
+          ctx.beginPath();
+          ctx.moveTo(poster.width / 2 - 460, footixY - 46);
+          ctx.lineTo(poster.width / 2 + 460, footixY - 46);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.textAlign = "center";
+          ctx.fillStyle = "#FF8FA3";
+          ctx.font = "800 40px Arial, sans-serif";
+          ctx.fillText("🤡 ZONE FOOTIX", poster.width / 2, footixY);
+          ctx.fillStyle = "#fff";
+          ctx.font = "700 34px Arial, sans-serif";
+          ctx.fillText(`${last.pseudo} — ${last.points_soiree ?? 0} pts`, poster.width / 2, footixY + 46);
+          ctx.fillStyle = "#8B96AC";
+          ctx.font = "italic 26px Arial, sans-serif";
+          ctx.fillText(quipFor(last.pseudo || "?"), poster.width / 2, footixY + 82);
+        }
+
+        await downloadCanvasPng(poster, `predicto-classement-${soiree.code_qr}.png`);
+      } catch (e) {
+        alert("Erreur : " + e.message);
+      } finally {
+        btnEl.textContent = originalLabel;
+        btnEl.disabled = false;
+      }
+    }
+
+    // Génère une affiche PNG (1920x1080) listant les scores exacts ("Masterclass")
+    // de la soirée — à publier après le match ou afficher sur la TV.
+    async function downloadMasterclassPoster(soiree, btnEl) {
+      const originalLabel = btnEl.textContent;
+      btnEl.textContent = "Génération…";
+      btnEl.disabled = true;
+      try {
+        const { data: matchsSoir } = await sb.from("matchs").select("*").eq("soiree_id", soiree.id);
+        const matchIds = (matchsSoir || []).map(m => m.id);
+        if (matchIds.length === 0) {
+          alert("Pas encore de match pour cette soirée.");
+          return;
+        }
+
+        const { data: winners, error } = await sb.from("pronostics")
+          .select("*, joueurs(pseudo), matchs(equipe_domicile, equipe_exterieur, score_domicile, score_exterieur)")
+          .in("match_id", matchIds)
+          .eq("points", 5);
+        if (error) throw error;
+        if (!winners || winners.length === 0) {
+          alert("Pas encore de Masterclass ce soir (aucun score exact trouvé pour l'instant).");
+          return;
+        }
+
+        const poster = document.createElement("canvas");
+        poster.width = 1920;
+        poster.height = 1080;
+        const ctx = poster.getContext("2d");
+        const grad = ctx.createLinearGradient(0, 0, 0, poster.height);
+        grad.addColorStop(0, "#0A0F1C");
+        grad.addColorStop(1, "#15223B");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, poster.width, poster.height);
+
+        const glow = ctx.createRadialGradient(poster.width / 2, 380, 60, poster.width / 2, 380, 600);
+        glow.addColorStop(0, "rgba(255,214,0,0.18)");
+        glow.addColorStop(1, "rgba(255,214,0,0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, poster.width, poster.height);
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#8B96AC";
+        ctx.font = "700 32px Arial, sans-serif";
+        ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 80);
+
+        ctx.fillStyle = "#FFD600";
+        const title = soiree.label || `Soirée du ${soiree.date}`;
+        const titleSize = fitFontSize(ctx, title, 1400, "800", "Arial, sans-serif", 38, 24);
+        ctx.font = `800 ${titleSize}px Arial, sans-serif`;
+        ctx.fillText(title, poster.width / 2, 132);
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "800 76px Arial, sans-serif";
+        ctx.fillText("🎯 LES MASTERCLASS", poster.width / 2, 230);
+        ctx.fillStyle = "#00F0FF";
+        ctx.font = "700 32px Arial, sans-serif";
+        ctx.fillText("Ils avaient vu venir le score exact.", poster.width / 2, 274);
+
+        const shown = winners.slice(0, 10);
+        const n = shown.length;
+        const listTop = 360, listBottom = 970;
+        const rowH = (listBottom - listTop) / n;
+        const fontMain = Math.max(26, Math.min(46, rowH * 0.5));
+        const fontSub = Math.max(16, fontMain * 0.5);
+        let y = listTop + rowH * 0.62;
+        shown.forEach(w => {
+          const m = w.matchs;
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = `800 ${fontMain}px Arial, sans-serif`;
+          ctx.fillText(`🎯 ${w.joueurs?.pseudo || "?"}`, poster.width / 2, y);
+          if (m) {
+            ctx.fillStyle = "#8B96AC";
+            ctx.font = `600 ${fontSub}px Arial, sans-serif`;
+            ctx.fillText(`${m.equipe_domicile} ${m.score_domicile}-${m.score_exterieur} ${m.equipe_exterieur}`, poster.width / 2, y + fontMain * 0.62);
+          }
+          y += rowH;
+        });
+
+        ctx.fillStyle = "#8B96AC";
+        ctx.font = "600 28px Arial, sans-serif";
+        const extra = winners.length > shown.length ? ` (+ ${winners.length - shown.length} autre${winners.length - shown.length > 1 ? "s" : ""})` : "";
+        ctx.fillText(`🍺 Score exact = boisson offerte. Assume ton prono !${extra}`, poster.width / 2, 1030);
+
+        await downloadCanvasPng(poster, `predicto-masterclass-${soiree.code_qr}.png`);
+      } catch (e) {
+        alert("Erreur : " + e.message);
+      } finally {
+        btnEl.textContent = originalLabel;
+        btnEl.disabled = false;
+      }
+    }
+
     async function fetchMatchesForDate(dateStr) {
       // Passe par la fonction serveur /api/matches (voir api/matches.js) :
       // l'API football-data.org bloque les appels directs depuis un navigateur.
@@ -659,7 +909,11 @@
           ${rewardBlockHtml}
           <div id="qr-${soiree.id}"></div>
           <div class="link-box">${link}</div>
-          <button class="secondary btn-download-poster" type="button">🖼️ Télécharger l'affiche QR (pour TV sans internet)</button>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
+            <button class="secondary btn-download-poster" type="button" style="margin:0;">🖼️ Affiche QR (pour TV sans internet)</button>
+            <button class="secondary btn-download-classement-poster" type="button" style="margin:0;">🏆 Affiche classement + Zone Footix</button>
+            <button class="secondary btn-download-masterclass-poster" type="button" style="margin:0;">🎯 Affiche des Masterclass</button>
+          </div>
           <div class="matches"></div>
           <div class="add-match-form">
             <div class="match-row" style="border-bottom:none; flex-wrap:wrap; gap:8px;">
@@ -748,6 +1002,14 @@
 
         block.querySelector(".btn-download-poster").addEventListener("click", (e) => {
           downloadQrPoster(soiree, link, e.target);
+        });
+
+        block.querySelector(".btn-download-classement-poster").addEventListener("click", (e) => {
+          downloadClassementPoster(soiree, e.target);
+        });
+
+        block.querySelector(".btn-download-masterclass-poster").addEventListener("click", (e) => {
+          downloadMasterclassPoster(soiree, e.target);
         });
 
         block.querySelector(".btn-add-match").addEventListener("click", () => {
