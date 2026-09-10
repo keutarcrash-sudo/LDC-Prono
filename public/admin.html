@@ -199,6 +199,70 @@
       return y + out.length * lineHeight;
     }
 
+    // Dessine une image en mode "cover" (comme background-size:cover en CSS)
+    // dans un rectangle donné, en la recadrant plutôt qu'en la déformant.
+    function drawCoverImage(ctx, img, x, y, w, h) {
+      const imgRatio = img.width / img.height;
+      const boxRatio = w / h;
+      let sx, sy, sw, sh;
+      if (imgRatio > boxRatio) {
+        sh = img.height;
+        sw = sh * boxRatio;
+        sx = (img.width - sw) / 2;
+        sy = 0;
+      } else {
+        sw = img.width;
+        sh = sw / boxRatio;
+        sx = 0;
+        sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    }
+
+    let cachedPosterBg = null;
+    function loadPosterBackground() {
+      if (cachedPosterBg) return Promise.resolve(cachedPosterBg);
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => { cachedPosterBg = img; resolve(img); };
+        img.onerror = () => resolve(null);
+        img.src = "assets/hero-bg.jpg";
+      });
+    }
+
+    // Fond photo de stade (au lieu d'un dégradé plat) + voile sombre pour
+    // que le texte reste lisible par-dessus, quel que soit le contenu de
+    // l'affiche.
+    async function drawPosterBackground(ctx, w, h) {
+      const bg = await loadPosterBackground();
+      if (bg) {
+        drawCoverImage(ctx, bg, 0, 0, w, h);
+      } else {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, "#0A0F1C");
+        grad.addColorStop(1, "#15223B");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+      }
+      const overlay = ctx.createLinearGradient(0, 0, 0, h);
+      overlay.addColorStop(0, "rgba(4,7,14,0.62)");
+      overlay.addColorStop(0.4, "rgba(4,7,14,0.42)");
+      overlay.addColorStop(1, "rgba(4,7,14,0.8)");
+      ctx.fillStyle = overlay;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    // Ombre portée pour que les titres restent lisibles sur une photo,
+    // là où un simple fillText à plat se fondrait dans le fond.
+    function withTextShadow(ctx, blur, fn) {
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.75)";
+      ctx.shadowBlur = blur;
+      ctx.shadowOffsetY = 3;
+      fn();
+      ctx.restore();
+    }
+
     // Génère une affiche PNG (1920x1080, format TV) avec le QR code de la
     // soirée, pour la mettre sur une clé USB et l'afficher sur une TV sans
     // connexion internet (image fixe, pas de mise à jour en direct).
@@ -222,33 +286,28 @@
         poster.height = 1080;
         const ctx = poster.getContext("2d");
 
-        const grad = ctx.createLinearGradient(0, 0, 0, poster.height);
-        grad.addColorStop(0, "#0A0F1C");
-        grad.addColorStop(1, "#15223B");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, poster.width, poster.height);
-
-        // Lueur douce derrière le QR pour donner du relief au fond uni.
-        const glow = ctx.createRadialGradient(poster.width / 2, 470, 60, poster.width / 2, 470, 480);
-        glow.addColorStop(0, "rgba(30,144,255,0.25)");
-        glow.addColorStop(1, "rgba(30,144,255,0)");
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, poster.width, poster.height);
+        await drawPosterBackground(ctx, poster.width, poster.height);
 
         ctx.textAlign = "center";
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "800 100px Arial, sans-serif";
-        ctx.fillText("PREDICTO", poster.width / 2, 140);
+        withTextShadow(ctx, 18, () => {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "800 108px Arial, sans-serif";
+          ctx.fillText("PREDICTO", poster.width / 2, 140);
+        });
 
-        ctx.fillStyle = "#8B96AC";
-        ctx.font = "600 36px Arial, sans-serif";
-        ctx.fillText("LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 195);
+        withTextShadow(ctx, 10, () => {
+          ctx.fillStyle = "#D6DCF0";
+          ctx.font = "700 36px Arial, sans-serif";
+          ctx.fillText("LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 195);
+        });
 
-        ctx.fillStyle = "#FFD600";
         const soireeTitle = soiree.label || `Soirée du ${soiree.date}`;
-        const titleSize = fitFontSize(ctx, soireeTitle, 1500, "800", "Arial, sans-serif", 50, 30);
-        ctx.font = `800 ${titleSize}px Arial, sans-serif`;
-        ctx.fillText(soireeTitle, poster.width / 2, 265);
+        const titleSize = fitFontSize(ctx, soireeTitle, 1500, "800", "Arial, sans-serif", 52, 30);
+        withTextShadow(ctx, 14, () => {
+          ctx.fillStyle = "#FFD600";
+          ctx.font = `800 ${titleSize}px Arial, sans-serif`;
+          ctx.fillText(soireeTitle, poster.width / 2, 268);
+        });
 
         const qrSize = 500;
         const qrX = (poster.width - qrSize) / 2;
@@ -277,21 +336,25 @@
           }
         });
 
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "800 50px Arial, sans-serif";
-        ctx.fillText("📱 Scanne pour jouer !", poster.width / 2, qrY + qrSize + 70);
+        withTextShadow(ctx, 12, () => {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "800 50px Arial, sans-serif";
+          ctx.fillText("📱 Scanne pour jouer !", poster.width / 2, qrY + qrSize + 70);
+        });
 
-        ctx.fillStyle = "#8B96AC";
-        ctx.font = "600 28px Arial, sans-serif";
-        wrapCenteredText(
-          ctx,
-          soiree.recompense || "Score exact sur un match = boisson offerte !",
-          poster.width / 2,
-          qrY + qrSize + 125,
-          1500,
-          36,
-          2
-        );
+        withTextShadow(ctx, 8, () => {
+          ctx.fillStyle = "#E4E8F5";
+          ctx.font = "700 28px Arial, sans-serif";
+          wrapCenteredText(
+            ctx,
+            soiree.recompense || "Score exact sur un match = boisson offerte !",
+            poster.width / 2,
+            qrY + qrSize + 125,
+            1500,
+            36,
+            2
+          );
+        });
 
         document.body.removeChild(hidden);
 
@@ -369,29 +432,23 @@
         poster.height = 1080;
         const ctx = poster.getContext("2d");
 
-        const grad = ctx.createLinearGradient(0, 0, 0, poster.height);
-        grad.addColorStop(0, "#0A0F1C");
-        grad.addColorStop(1, "#15223B");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, poster.width, poster.height);
-
         const centerY = 460;
-        const glow = ctx.createRadialGradient(poster.width / 2, centerY, 60, poster.width / 2, centerY, 550);
-        glow.addColorStop(0, "rgba(30,144,255,0.22)");
-        glow.addColorStop(1, "rgba(30,144,255,0)");
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, poster.width, poster.height);
+        await drawPosterBackground(ctx, poster.width, poster.height);
 
         ctx.textAlign = "center";
-        ctx.fillStyle = "#8B96AC";
-        ctx.font = "700 32px Arial, sans-serif";
-        ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 70);
+        withTextShadow(ctx, 8, () => {
+          ctx.fillStyle = "#D6DCF0";
+          ctx.font = "700 32px Arial, sans-serif";
+          ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 70);
+        });
 
-        ctx.fillStyle = "#FFD600";
         const soireeTitle = soiree.label || `Soirée du ${soiree.date}`;
         const titleSize = fitFontSize(ctx, soireeTitle, 1300, "800", "Arial, sans-serif", 46, 26);
-        ctx.font = `800 ${titleSize}px Arial, sans-serif`;
-        ctx.fillText(soireeTitle, poster.width / 2, 140);
+        withTextShadow(ctx, 12, () => {
+          ctx.fillStyle = "#FFD600";
+          ctx.font = `800 ${titleSize}px Arial, sans-serif`;
+          ctx.fillText(soireeTitle, poster.width / 2, 140);
+        });
 
         const [homeImg, awayImg] = await Promise.all([
           loadImageSafe(match.logo_domicile),
@@ -404,13 +461,15 @@
         drawTeamCircle(ctx, homeX, centerY, r, homeImg, match.equipe_domicile);
         drawTeamCircle(ctx, awayX, centerY, r, awayImg, match.equipe_exterieur);
 
-        ctx.fillStyle = "#FFFFFF";
-        const homeSize = fitFontSize(ctx, match.equipe_domicile, 460, "800", "Arial, sans-serif", 56, 30);
-        ctx.font = `800 ${homeSize}px Arial, sans-serif`;
-        ctx.fillText(match.equipe_domicile, homeX, centerY + r + 70);
-        const awaySize = fitFontSize(ctx, match.equipe_exterieur, 460, "800", "Arial, sans-serif", 56, 30);
-        ctx.font = `800 ${awaySize}px Arial, sans-serif`;
-        ctx.fillText(match.equipe_exterieur, awayX, centerY + r + 70);
+        withTextShadow(ctx, 10, () => {
+          ctx.fillStyle = "#FFFFFF";
+          const homeSize = fitFontSize(ctx, match.equipe_domicile, 460, "800", "Arial, sans-serif", 56, 30);
+          ctx.font = `800 ${homeSize}px Arial, sans-serif`;
+          ctx.fillText(match.equipe_domicile, homeX, centerY + r + 70);
+          const awaySize = fitFontSize(ctx, match.equipe_exterieur, 460, "800", "Arial, sans-serif", 56, 30);
+          ctx.font = `800 ${awaySize}px Arial, sans-serif`;
+          ctx.fillText(match.equipe_exterieur, awayX, centerY + r + 70);
+        });
 
         ctx.save();
         ctx.translate(poster.width / 2, centerY);
@@ -434,22 +493,26 @@
         const kickoff = new Date(match.coup_envoi).toLocaleString("fr-FR", {
           weekday: "long", day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit",
         });
-        ctx.fillStyle = "#00F0FF";
-        ctx.font = "700 38px Arial, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(`Coup d'envoi : ${kickoff}`, poster.width / 2, centerY + r + 135);
+        withTextShadow(ctx, 8, () => {
+          ctx.fillStyle = "#00F0FF";
+          ctx.font = "700 38px Arial, sans-serif";
+          ctx.fillText(`Coup d'envoi : ${kickoff}`, poster.width / 2, centerY + r + 135);
+        });
 
-        ctx.fillStyle = "#8B96AC";
-        ctx.font = "600 30px Arial, sans-serif";
-        wrapCenteredText(
-          ctx,
-          soiree.recompense ? "🎯 " + soiree.recompense : "🎯 Score exact sur ce match = boisson offerte !",
-          poster.width / 2,
-          centerY + r + 190,
-          1300,
-          36,
-          2
-        );
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#E4E8F5";
+          ctx.font = "700 30px Arial, sans-serif";
+          wrapCenteredText(
+            ctx,
+            soiree.recompense ? "🎯 " + soiree.recompense : "🎯 Score exact sur ce match = boisson offerte !",
+            poster.width / 2,
+            centerY + r + 190,
+            1300,
+            36,
+            2
+          );
+        });
 
         // QR en médaillon dans le coin, à l'écart du reste pour ne rien chevaucher.
         const hidden = document.createElement("div");
@@ -471,10 +534,12 @@
         else if (qrImg && qrImg.complete) ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
         document.body.removeChild(hidden);
 
-        ctx.fillStyle = "#FFFFFF";
         ctx.textAlign = "center";
-        ctx.font = "700 26px Arial, sans-serif";
-        ctx.fillText("📱 Scanne pour jouer !", qrX + qrSize / 2, qrY + qrSize + 42);
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "700 26px Arial, sans-serif";
+          ctx.fillText("📱 Scanne pour jouer !", qrX + qrSize / 2, qrY + qrSize + 42);
+        });
 
         try {
           await downloadCanvasPng(poster, `predicto-match-${match.id}.png`);
@@ -528,26 +593,28 @@
         poster.width = 1920;
         poster.height = 1080;
         const ctx = poster.getContext("2d");
-        const grad = ctx.createLinearGradient(0, 0, 0, poster.height);
-        grad.addColorStop(0, "#0A0F1C");
-        grad.addColorStop(1, "#15223B");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, poster.width, poster.height);
+        await drawPosterBackground(ctx, poster.width, poster.height);
 
         ctx.textAlign = "center";
-        ctx.fillStyle = "#8B96AC";
-        ctx.font = "700 32px Arial, sans-serif";
-        ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 70);
+        withTextShadow(ctx, 8, () => {
+          ctx.fillStyle = "#D6DCF0";
+          ctx.font = "700 32px Arial, sans-serif";
+          ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 70);
+        });
 
-        ctx.fillStyle = "#FFD600";
         const title = soiree.label || `Soirée du ${soiree.date}`;
         const titleSize = fitFontSize(ctx, title, 1400, "800", "Arial, sans-serif", 40, 24);
-        ctx.font = `800 ${titleSize}px Arial, sans-serif`;
-        ctx.fillText(title, poster.width / 2, 122);
+        withTextShadow(ctx, 10, () => {
+          ctx.fillStyle = "#FFD600";
+          ctx.font = `800 ${titleSize}px Arial, sans-serif`;
+          ctx.fillText(title, poster.width / 2, 122);
+        });
 
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "800 62px Arial, sans-serif";
-        ctx.fillText("🏆 CLASSEMENT PREDICTO", poster.width / 2, 200);
+        withTextShadow(ctx, 12, () => {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "800 62px Arial, sans-serif";
+          ctx.fillText("🏆 CLASSEMENT PREDICTO", poster.width / 2, 200);
+        });
 
         const top3 = rows.slice(0, 3);
         const order = [1, 0, 2];
@@ -600,6 +667,18 @@
         });
 
         const rest = rows.slice(3, 10);
+        const listYEnd = 610 + rest.length * 44;
+        const footixYEstimate = rows.length >= 4 ? Math.max(listYEnd + 40, 900) : null;
+        const panelBottom = (footixYEstimate ?? listYEnd) + (footixYEstimate ? 100 : 20);
+        ctx.fillStyle = "rgba(5,8,16,0.55)";
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(poster.width / 2 - 500, 578, 1000, panelBottom - 578, 20);
+          ctx.fill();
+        } else {
+          ctx.fillRect(poster.width / 2 - 500, 578, 1000, panelBottom - 578);
+        }
+
         let listY = 610;
         rest.forEach((r, idx) => {
           ctx.textAlign = "left";
@@ -675,39 +754,47 @@
         poster.width = 1920;
         poster.height = 1080;
         const ctx = poster.getContext("2d");
-        const grad = ctx.createLinearGradient(0, 0, 0, poster.height);
-        grad.addColorStop(0, "#0A0F1C");
-        grad.addColorStop(1, "#15223B");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, poster.width, poster.height);
-
-        const glow = ctx.createRadialGradient(poster.width / 2, 380, 60, poster.width / 2, 380, 600);
-        glow.addColorStop(0, "rgba(255,214,0,0.18)");
-        glow.addColorStop(1, "rgba(255,214,0,0)");
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, poster.width, poster.height);
+        await drawPosterBackground(ctx, poster.width, poster.height);
 
         ctx.textAlign = "center";
-        ctx.fillStyle = "#8B96AC";
-        ctx.font = "700 32px Arial, sans-serif";
-        ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 80);
+        withTextShadow(ctx, 8, () => {
+          ctx.fillStyle = "#D6DCF0";
+          ctx.font = "700 32px Arial, sans-serif";
+          ctx.fillText("PREDICTO — LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 80);
+        });
 
-        ctx.fillStyle = "#FFD600";
         const title = soiree.label || `Soirée du ${soiree.date}`;
         const titleSize = fitFontSize(ctx, title, 1400, "800", "Arial, sans-serif", 38, 24);
-        ctx.font = `800 ${titleSize}px Arial, sans-serif`;
-        ctx.fillText(title, poster.width / 2, 132);
+        withTextShadow(ctx, 10, () => {
+          ctx.fillStyle = "#FFD600";
+          ctx.font = `800 ${titleSize}px Arial, sans-serif`;
+          ctx.fillText(title, poster.width / 2, 132);
+        });
 
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "800 76px Arial, sans-serif";
-        ctx.fillText("🎯 LES MASTERCLASS", poster.width / 2, 230);
-        ctx.fillStyle = "#00F0FF";
-        ctx.font = "700 32px Arial, sans-serif";
-        ctx.fillText("Ils avaient vu venir le score exact.", poster.width / 2, 274);
+        withTextShadow(ctx, 14, () => {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "800 76px Arial, sans-serif";
+          ctx.fillText("🎯 LES MASTERCLASS", poster.width / 2, 230);
+        });
+        withTextShadow(ctx, 8, () => {
+          ctx.fillStyle = "#00F0FF";
+          ctx.font = "700 32px Arial, sans-serif";
+          ctx.fillText("Ils avaient vu venir le score exact.", poster.width / 2, 274);
+        });
 
         const shown = winners.slice(0, 10);
         const n = shown.length;
         const listTop = 360, listBottom = 970;
+
+        ctx.fillStyle = "rgba(5,8,16,0.55)";
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(poster.width / 2 - 520, listTop - 20, 1040, listBottom - listTop + 40, 20);
+          ctx.fill();
+        } else {
+          ctx.fillRect(poster.width / 2 - 520, listTop - 20, 1040, listBottom - listTop + 40);
+        }
+
         const rowH = (listBottom - listTop) / n;
         const fontMain = Math.max(26, Math.min(46, rowH * 0.5));
         const fontSub = Math.max(16, fontMain * 0.5);
@@ -725,10 +812,12 @@
           y += rowH;
         });
 
-        ctx.fillStyle = "#8B96AC";
-        ctx.font = "600 28px Arial, sans-serif";
-        const extra = winners.length > shown.length ? ` (+ ${winners.length - shown.length} autre${winners.length - shown.length > 1 ? "s" : ""})` : "";
-        ctx.fillText(`🍺 Score exact = boisson offerte. Assume ton prono !${extra}`, poster.width / 2, 1030);
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#E4E8F5";
+          ctx.font = "700 28px Arial, sans-serif";
+          const extra = winners.length > shown.length ? ` (+ ${winners.length - shown.length} autre${winners.length - shown.length > 1 ? "s" : ""})` : "";
+          ctx.fillText(`🍺 Score exact = boisson offerte. Assume ton prono !${extra}`, poster.width / 2, 1030);
+        });
 
         await downloadCanvasPng(poster, `predicto-masterclass-${soiree.code_qr}.png`);
       } catch (e) {
