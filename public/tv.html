@@ -67,6 +67,10 @@
   .podium-row .pts { color: var(--gold); }
   .reward { margin-top: 28px; font-size: 1.5rem; color: var(--text-muted); }
   .reward b { color: var(--gold); }
+  .footix-tag {
+    font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px;
+    text-transform: uppercase; color: #FF8FA3; margin-left: 12px;
+  }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -74,34 +78,34 @@
   <div class="screen">
 
     <div id="phase-idle" hidden>
-      <div class="eyebrow gold">Predicto — Top saison</div>
-      <h1>Classement de la saison</h1>
+      <div class="eyebrow gold">🎯 Qui sera le Footix de la saison ?</div>
+      <h1>Classement Predicto</h1>
       <div class="podium" id="idleList"></div>
     </div>
 
     <div id="phase-avant" hidden>
       <div class="eyebrow" id="avantLabel">Soirée Ligue des Champions</div>
-      <h1 id="avantTitle">3 matchs à pronostiquer</h1>
+      <h1 id="avantTitle">Tu penses connaître le score ? Prouve-le.</h1>
       <div id="qrcode"></div>
-      <div class="sub">Scanne le QR code pour jouer !</div>
+      <div class="sub" id="avantSub">Scanne le QR code pour jouer !</div>
       <div class="countdown" id="avantCountdown"></div>
     </div>
 
     <div id="phase-ferme" hidden>
       <div class="eyebrow closed"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span> Pronostics fermés</div>
-      <h1>Que la meilleure équipe de<br>pronostiqueurs gagne !</h1>
+      <h1>Maintenant, on regarde<br>qui avait raison.</h1>
       <div class="match-list" id="fermeList"></div>
     </div>
 
     <div id="phase-resultats" hidden>
-      <div class="eyebrow">Résultats</div>
+      <div class="eyebrow">Score final</div>
       <h1>Résultats de la soirée</h1>
       <div class="match-list" id="resultatsList"></div>
     </div>
 
     <div id="phase-classement" hidden>
-      <div class="eyebrow gold"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/></svg></span> Classement de la soirée</div>
-      <h1>Bravo aux meilleurs pronostiqueurs !</h1>
+      <div class="eyebrow gold"><span class="svg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/></svg></span> Classement Predicto</div>
+      <h1>Le classement vient de tomber.</h1>
       <div class="podium" id="classementList"></div>
       <div class="reward" id="rewardLine"></div>
     </div>
@@ -161,10 +165,14 @@
         return `<div class="podium-row"><span>Aucun pronostic pour l'instant</span></div>`;
       }
       const medals = ["🥇", "🥈", "🥉"];
-      return rows.slice(0, 5).map((r, i) => `
+      const shown = rows.slice(0, 5);
+      // La dernière ligne affichée devient la Zone Footix — seulement si le
+      // classement compte assez de monde pour que ça ait un sens.
+      const footixIdx = rows.length >= 4 ? shown.length - 1 : -1;
+      return shown.map((r, i) => `
         <div class="podium-row ${i === 0 ? 'gold' : ''} ${extraClass || ''}">
           <span class="rank">${medals[i] || i + 1}</span>
-          <span>${r.pseudo}</span>
+          <span>${r.pseudo}${i === 0 ? ' <span class="footix-tag" style="color:var(--gold);">👑 Roi du prono</span>' : ''}${i === footixIdx ? ' <span class="footix-tag">🤡 Zone Footix</span>' : ''}</span>
           <span class="pts">${r[pointsKey] ?? 0} pts</span>
         </div>
       `).join("");
@@ -192,7 +200,8 @@
       if (now < earliestKickoff) {
         cachedEarliestKickoff = earliestKickoff;
         document.getElementById("avantLabel").textContent = soiree.label || `Soirée du ${soiree.date}`;
-        document.getElementById("avantTitle").textContent = `${matchs.length} match${matchs.length > 1 ? "s" : ""} à pronostiquer`;
+        document.getElementById("avantTitle").textContent = "Tu penses connaître le score ? Prouve-le.";
+        document.getElementById("avantSub").textContent = `${matchs.length} match${matchs.length > 1 ? "s" : ""} ce soir — scanne pour jouer ! 🍺 Score exact = boisson offerte, évite la Zone Footix.`;
         const link = `${SITE_BASE_URL}pronostics.html?code=${soiree.code_qr}`;
         if (qrRendered !== link) {
           document.getElementById("qrcode").innerHTML = "";
@@ -223,7 +232,7 @@
       if (rotateToggle) {
         document.getElementById("resultatsList").innerHTML = matchs.map(m => {
           const exactBadge = exactCounts[m.id]
-            ? `<span class="check">${icon("target")} ${exactCounts[m.id]} score exact${exactCounts[m.id] > 1 ? "s" : ""} !</span>`
+            ? `<span class="check">${icon("target")} ${exactCounts[m.id] > 1 ? exactCounts[m.id] + " MASTERCLASS !" : "MASTERCLASS !"}</span>`
             : `<span class="check">${icon("check")}</span>`;
           return `
           <div class="match-row finished">
@@ -237,7 +246,7 @@
         const { data: classementSoiree } = await sb.from("classement_soiree")
           .select("*").eq("soiree_id", soiree.id).order("points_soiree", { ascending: false }).limit(5);
         document.getElementById("classementList").innerHTML = rankRowsHtml(classementSoiree, "points_soiree");
-        document.getElementById("rewardLine").innerHTML = `${icon("target")} Score exact sur un match = boisson offerte ! Va choisir la tienne sur ton profil.`;
+        document.getElementById("rewardLine").innerHTML = `${icon("target")} Score exact = boisson offerte. Va la réclamer sur ton profil !`;
         showPhase("classement");
       }
     }
