@@ -291,6 +291,54 @@
       [[m, m], [w - m, m], [m, h - m], [w - m, h - m]].forEach(([x, y]) => drawRivet(ctx, x, y, "rgba(255,214,0,1)"));
     }
 
+    // Icônes vectorielles (les mêmes tracés que le reste du site, voir les
+    // objets ICONS de pronostics.html/tv.html) rendues sur le <canvas> —
+    // pas d'emoji, dont le rendu varie trop d'un appareil à l'autre.
+    const SVG_ICON_PATHS = {
+      target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="__COLOR__" stroke="none"/>',
+      trophy: '<path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/>',
+    };
+    const svgIconCache = {};
+    function loadSvgIconImage(name, color) {
+      const key = `${name}|${color}`;
+      if (svgIconCache[key]) return svgIconCache[key];
+      const inner = SVG_ICON_PATHS[name].replace(/__COLOR__/g, color);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+      const promise = new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+      });
+      svgIconCache[key] = promise;
+      return promise;
+    }
+    // Dessine une icône vectorielle centrée en (x, y), de taille `size`.
+    async function drawSvgIcon(ctx, name, x, y, size, color) {
+      const img = await loadSvgIconImage(name, color);
+      if (img) ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+    }
+    // Dessine "icône + titre" comme un seul groupe centré sur centerX —
+    // utilisé pour les gros titres d'affiche (ex: 🏆 → icône + "PREDICTO").
+    async function drawIconTitle(ctx, iconName, iconColor, text, textColor, font, centerX, baselineY, iconSize, gap, shadowBlur) {
+      ctx.font = font;
+      const textWidth = ctx.measureText(text).width;
+      const totalWidth = iconSize + gap + textWidth;
+      const startX = centerX - totalWidth / 2;
+      const fontSizeMatch = font.match(/(\d+)px/);
+      const fontSize = fontSizeMatch ? parseInt(fontSizeMatch[1], 10) : 40;
+      const iconCenterY = baselineY - fontSize * 0.36;
+      await drawSvgIcon(ctx, iconName, startX + iconSize / 2, iconCenterY, iconSize, iconColor);
+      const prevAlign = ctx.textAlign;
+      ctx.textAlign = "left";
+      withTextShadow(ctx, shadowBlur, () => {
+        ctx.fillStyle = textColor;
+        ctx.font = font;
+        ctx.fillText(text, startX + iconSize + gap, baselineY);
+      });
+      ctx.textAlign = prevAlign;
+    }
+
     // Génère une affiche PNG (1920x1080, format TV) avec le QR code de la
     // soirée, pour la mettre sur une clé USB et l'afficher sur une TV sans
     // connexion internet (image fixe, pas de mise à jour en direct).
@@ -318,11 +366,7 @@
         drawPosterFrame(ctx, poster.width, poster.height);
 
         ctx.textAlign = "center";
-        withTextShadow(ctx, 16, () => {
-          ctx.fillStyle = "#FFFFFF";
-          ctx.font = "800 92px Arial, sans-serif";
-          ctx.fillText("🏆 PREDICTO", poster.width / 2, 112);
-        });
+        await drawIconTitle(ctx, "trophy", "#FFD600", "PREDICTO", "#FFFFFF", "800 92px Arial, sans-serif", poster.width / 2, 112, 64, 22, 16);
 
         withTextShadow(ctx, 8, () => {
           ctx.fillStyle = "#D6DCF0";
@@ -410,11 +454,8 @@
         ctx.stroke();
         ctx.restore();
 
-        withTextShadow(ctx, 10, () => {
-          ctx.font = "62px Arial, sans-serif";
-          ctx.fillText("🎯", leftX, rowY);
-          ctx.fillText("🏆", rightX, rowY);
-        });
+        await drawSvgIcon(ctx, "target", leftX, rowY - 22, 58, "#FFFFFF");
+        await drawSvgIcon(ctx, "trophy", rightX, rowY - 22, 58, "#FFD600");
         const rewardShort = soiree.recompense && soiree.recompense.length <= 42 ? soiree.recompense : "= 1 boisson offerte";
         withTextShadow(ctx, 6, () => {
           ctx.fillStyle = "#FFFFFF";
@@ -577,12 +618,13 @@
           ctx.fillText(`Coup d'envoi : ${kickoff}`, poster.width / 2, centerY + r + 135);
         });
 
+        await drawSvgIcon(ctx, "target", poster.width / 2, centerY + r + 165, 36, "#FFFFFF");
         withTextShadow(ctx, 6, () => {
           ctx.fillStyle = "#E4E8F5";
           ctx.font = "700 30px Arial, sans-serif";
           wrapCenteredText(
             ctx,
-            soiree.recompense ? "🎯 " + soiree.recompense : "🎯 Score exact sur ce match = boisson offerte !",
+            soiree.recompense || "Score exact sur ce match = boisson offerte !",
             poster.width / 2,
             centerY + r + 190,
             1300,
@@ -687,11 +729,7 @@
           ctx.fillText(title, poster.width / 2, 122);
         });
 
-        withTextShadow(ctx, 12, () => {
-          ctx.fillStyle = "#FFFFFF";
-          ctx.font = "800 62px Arial, sans-serif";
-          ctx.fillText("🏆 CLASSEMENT PREDICTO", poster.width / 2, 200);
-        });
+        await drawIconTitle(ctx, "trophy", "#FFD600", "CLASSEMENT PREDICTO", "#FFFFFF", "800 62px Arial, sans-serif", poster.width / 2, 200, 46, 18, 12);
 
         const top3 = rows.slice(0, 3);
         const order = [1, 0, 2];
@@ -848,11 +886,7 @@
           ctx.fillText(title, poster.width / 2, 132);
         });
 
-        withTextShadow(ctx, 14, () => {
-          ctx.fillStyle = "#FFFFFF";
-          ctx.font = "800 76px Arial, sans-serif";
-          ctx.fillText("🎯 LES MASTERCLASS", poster.width / 2, 230);
-        });
+        await drawIconTitle(ctx, "target", "#00F0FF", "LES MASTERCLASS", "#FFFFFF", "800 76px Arial, sans-serif", poster.width / 2, 230, 54, 20, 14);
         withTextShadow(ctx, 8, () => {
           ctx.fillStyle = "#00F0FF";
           ctx.font = "700 32px Arial, sans-serif";
@@ -875,19 +909,18 @@
         const rowH = (listBottom - listTop) / n;
         const fontMain = Math.max(26, Math.min(46, rowH * 0.5));
         const fontSub = Math.max(16, fontMain * 0.5);
+        const rowIconSize = Math.max(18, fontMain * 0.7);
         let y = listTop + rowH * 0.62;
-        shown.forEach(w => {
+        for (const w of shown) {
           const m = w.matchs;
-          ctx.fillStyle = "#FFFFFF";
-          ctx.font = `800 ${fontMain}px Arial, sans-serif`;
-          ctx.fillText(`🎯 ${w.joueurs?.pseudo || "?"}`, poster.width / 2, y);
+          await drawIconTitle(ctx, "target", "#00F0FF", w.joueurs?.pseudo || "?", "#FFFFFF", `800 ${fontMain}px Arial, sans-serif`, poster.width / 2, y, rowIconSize, rowIconSize * 0.3, 0);
           if (m) {
             ctx.fillStyle = "#8B96AC";
             ctx.font = `600 ${fontSub}px Arial, sans-serif`;
             ctx.fillText(`${m.equipe_domicile} ${m.score_domicile}-${m.score_exterieur} ${m.equipe_exterieur}`, poster.width / 2, y + fontMain * 0.62);
           }
           y += rowH;
-        });
+        }
 
         withTextShadow(ctx, 6, () => {
           ctx.fillStyle = "#E4E8F5";
