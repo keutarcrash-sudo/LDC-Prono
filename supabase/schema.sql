@@ -97,18 +97,26 @@ create trigger trg_recalc_points
 after update on matchs
 for each row execute function recalc_points_on_match_result();
 
--- Empêche de pronostiquer (ou modifier) un match une fois le coup d'envoi donné
+-- Empêche de pronostiquer (ou modifier) un match une fois le coup d'envoi
+-- donné — mais seulement pour une modification DIRECTE (un joueur). Le
+-- recalcul interne des points (trg_recalc_points, qui met à jour pronostics
+-- en cascade depuis une mise à jour de matchs) doit lui pouvoir s'exécuter
+-- après le coup d'envoi puisque c'est justement à ce moment-là qu'il a lieu.
+-- pg_trigger_depth() > 1 signifie qu'on est dans cette mise à jour en
+-- cascade, pas dans une action directe d'un joueur.
 create or replace function check_pronostic_timing()
 returns trigger as $$
 declare
   v_kickoff timestamptz;
 begin
-  select coup_envoi into v_kickoff from matchs where id = new.match_id;
-  if v_kickoff is null then
-    raise exception 'Match introuvable';
-  end if;
-  if now() >= v_kickoff then
-    raise exception 'Les pronostics pour ce match sont clôturés (coup d''envoi déjà donné)';
+  if pg_trigger_depth() <= 1 then
+    select coup_envoi into v_kickoff from matchs where id = new.match_id;
+    if v_kickoff is null then
+      raise exception 'Match introuvable';
+    end if;
+    if now() >= v_kickoff then
+      raise exception 'Les pronostics pour ce match sont clôturés (coup d''envoi déjà donné)';
+    end if;
   end if;
   new.updated_at = now();
   return new;
@@ -245,3 +253,26 @@ select
 from classement_soiree
 group by joueur_id, pseudo
 order by points_total desc;
+
+-- Corrige check_pronostic_timing() pour ne plus bloquer le recalcul interne
+-- des points quand l'admin rentre un score après le coup d'envoi (voir le
+-- commentaire au-dessus de la définition de la fonction, plus haut dans ce
+-- fichier). Sans risque de relancer ce bloc plusieurs fois.
+create or replace function check_pronostic_timing()
+returns trigger as $$
+declare
+  v_kickoff timestamptz;
+begin
+  if pg_trigger_depth() <= 1 then
+    select coup_envoi into v_kickoff from matchs where id = new.match_id;
+    if v_kickoff is null then
+      raise exception 'Match introuvable';
+    end if;
+    if now() >= v_kickoff then
+      raise exception 'Les pronostics pour ce match sont clôturés (coup d''envoi déjà donné)';
+    end if;
+  end if;
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
