@@ -299,11 +299,12 @@
       trophy: '<path d="M7 4h10v3a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/><path d="M12 12v3"/><path d="M8 20h8"/><path d="M9 20v-2a3 3 0 016 0v2"/>',
     };
     const svgIconCache = {};
-    function loadSvgIconImage(name, color) {
-      const key = `${name}|${color}`;
+    function loadSvgIconImage(name, color, strokeWidth) {
+      const sw = strokeWidth || 1.6;
+      const key = `${name}|${color}|${sw}`;
       if (svgIconCache[key]) return svgIconCache[key];
       const inner = SVG_ICON_PATHS[name].replace(/__COLOR__/g, color);
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
       const promise = new Promise((resolve) => {
         const img = new Image();
         img.onload = () => resolve(img);
@@ -314,13 +315,28 @@
       return promise;
     }
     // Dessine une icône vectorielle centrée en (x, y), de taille `size`.
-    async function drawSvgIcon(ctx, name, x, y, size, color) {
-      const img = await loadSvgIconImage(name, color);
+    // `strokeWidth` plus élevé = trait plus épais, pour un rendu plus
+    // "affiche" qu'un pictogramme d'interface fin.
+    async function drawSvgIcon(ctx, name, x, y, size, color, strokeWidth) {
+      const img = await loadSvgIconImage(name, color, strokeWidth);
       if (img) ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+    }
+    // Texte "affiche" : contour marqué (façon autocollant) + remplissage,
+    // beaucoup plus impactant qu'un simple fillText sur une photo chargée.
+    function fillTextPoster(ctx, text, x, y, fillColor, strokeColor, strokeWidth) {
+      ctx.lineJoin = "round";
+      ctx.miterLimit = 2;
+      if (strokeColor && strokeWidth) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeWidth;
+        ctx.strokeText(text, x, y);
+      }
+      ctx.fillStyle = fillColor;
+      ctx.fillText(text, x, y);
     }
     // Dessine "icône + titre" comme un seul groupe centré sur centerX —
     // utilisé pour les gros titres d'affiche (ex: 🏆 → icône + "PREDICTO").
-    async function drawIconTitle(ctx, iconName, iconColor, text, textColor, font, centerX, baselineY, iconSize, gap, shadowBlur) {
+    async function drawIconTitle(ctx, iconName, iconColor, text, textColor, font, centerX, baselineY, iconSize, gap, shadowBlur, strokeColor, strokeWidth) {
       ctx.font = font;
       const textWidth = ctx.measureText(text).width;
       const totalWidth = iconSize + gap + textWidth;
@@ -328,13 +344,12 @@
       const fontSizeMatch = font.match(/(\d+)px/);
       const fontSize = fontSizeMatch ? parseInt(fontSizeMatch[1], 10) : 40;
       const iconCenterY = baselineY - fontSize * 0.36;
-      await drawSvgIcon(ctx, iconName, startX + iconSize / 2, iconCenterY, iconSize, iconColor);
+      await drawSvgIcon(ctx, iconName, startX + iconSize / 2, iconCenterY, iconSize, iconColor, strokeWidth ? 2.4 : 1.6);
       const prevAlign = ctx.textAlign;
       ctx.textAlign = "left";
       withTextShadow(ctx, shadowBlur, () => {
-        ctx.fillStyle = textColor;
         ctx.font = font;
-        ctx.fillText(text, startX + iconSize + gap, baselineY);
+        fillTextPoster(ctx, text, startX + iconSize + gap, baselineY, textColor, strokeColor, strokeWidth);
       });
       ctx.textAlign = prevAlign;
     }
@@ -366,34 +381,33 @@
         drawPosterFrame(ctx, poster.width, poster.height);
 
         ctx.textAlign = "center";
-        await drawIconTitle(ctx, "trophy", "#FFD600", "PREDICTO", "#FFFFFF", "800 92px Arial, sans-serif", poster.width / 2, 112, 64, 22, 16);
+        await drawIconTitle(ctx, "trophy", "#FFD600", "PREDICTO", "#FFFFFF", "800 122px Arial, sans-serif", poster.width / 2, 132, 88, 24, 18, "#05070E", 7);
 
         withTextShadow(ctx, 8, () => {
           ctx.fillStyle = "#D6DCF0";
-          ctx.font = "700 32px Arial, sans-serif";
-          ctx.fillText("LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 152);
+          ctx.font = "700 34px Arial, sans-serif";
+          ctx.fillText("LIGUE DES CHAMPIONS — ARENA 18", poster.width / 2, 172);
         });
 
         ctx.save();
         ctx.strokeStyle = "rgba(255,214,0,0.55)";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(poster.width / 2 - 230, 172);
-        ctx.lineTo(poster.width / 2 + 230, 172);
+        ctx.moveTo(poster.width / 2 - 230, 190);
+        ctx.lineTo(poster.width / 2 + 230, 190);
         ctx.stroke();
         ctx.restore();
 
         const soireeTitle = soiree.label || `Soirée du ${soiree.date}`;
-        const titleSize = fitFontSize(ctx, soireeTitle, 1500, "800", "Arial, sans-serif", 44, 26);
+        const titleSize = fitFontSize(ctx, soireeTitle, 1600, "800", "Arial, sans-serif", 58, 30);
         withTextShadow(ctx, 12, () => {
-          ctx.fillStyle = "#FFD600";
           ctx.font = `800 ${titleSize}px Arial, sans-serif`;
-          ctx.fillText(soireeTitle, poster.width / 2, 220);
+          fillTextPoster(ctx, soireeTitle, poster.width / 2, 248, "#FFD600", "#05070E", 5);
         });
 
-        const qrSize = 380;
+        const qrSize = 360;
         const qrX = (poster.width - qrSize) / 2;
-        const qrY = 270;
+        const qrY = 300;
         const pad = 20;
 
         // Halo doux derrière le QR pour le faire ressortir de la photo.
@@ -435,43 +449,42 @@
 
         const qrBottom = qrY + qrSize + pad;
         withTextShadow(ctx, 10, () => {
-          ctx.fillStyle = "#FFFFFF";
-          ctx.font = "800 44px Arial, sans-serif";
-          ctx.fillText("📱 Scanne pour jouer !", poster.width / 2, qrBottom + 62);
+          ctx.font = "800 48px Arial, sans-serif";
+          fillTextPoster(ctx, "Scanne pour jouer !", poster.width / 2, qrBottom + 66, "#FFFFFF", "#05070E", 4);
         });
 
         // Rangée à deux colonnes façon "règles du jeu", séparées par un
         // filet vertical — plus de matière visuelle qu'un simple paragraphe.
-        const rowY = qrBottom + 155;
-        const leftX = poster.width / 2 - 250;
-        const rightX = poster.width / 2 + 250;
+        const rowY = qrBottom + 165;
+        const leftX = poster.width / 2 - 260;
+        const rightX = poster.width / 2 + 260;
         ctx.save();
         ctx.strokeStyle = "rgba(255,255,255,0.3)";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(poster.width / 2, rowY - 58);
-        ctx.lineTo(poster.width / 2, rowY + 78);
+        ctx.moveTo(poster.width / 2, rowY - 66);
+        ctx.lineTo(poster.width / 2, rowY + 92);
         ctx.stroke();
         ctx.restore();
 
-        await drawSvgIcon(ctx, "target", leftX, rowY - 22, 58, "#FFFFFF");
-        await drawSvgIcon(ctx, "trophy", rightX, rowY - 22, 58, "#FFD600");
-        const rewardShort = soiree.recompense && soiree.recompense.length <= 42 ? soiree.recompense : "= 1 boisson offerte";
+        await drawSvgIcon(ctx, "target", leftX, rowY - 28, 74, "#FFFFFF", 2.3);
+        await drawSvgIcon(ctx, "trophy", rightX, rowY - 28, 74, "#FFD600", 2.3);
+        const rewardShort = soiree.recompense && soiree.recompense.length <= 38 ? soiree.recompense : "= 1 boisson offerte";
         withTextShadow(ctx, 6, () => {
           ctx.fillStyle = "#FFFFFF";
-          ctx.font = "800 28px Arial, sans-serif";
-          ctx.fillText("SCORE EXACT", leftX, rowY + 44);
-          ctx.fillText("CLASSEMENT PREDICTO", rightX, rowY + 44);
+          ctx.font = "800 32px Arial, sans-serif";
+          ctx.fillText("SCORE EXACT", leftX, rowY + 46);
+          ctx.fillText("CLASSEMENT PREDICTO", rightX, rowY + 46);
           ctx.fillStyle = "#D6DCF0";
-          ctx.font = "600 23px Arial, sans-serif";
-          ctx.fillText(rewardShort, leftX, rowY + 76);
-          ctx.fillText("cumulé sur la saison", rightX, rowY + 76);
+          ctx.font = "600 25px Arial, sans-serif";
+          ctx.fillText(rewardShort, leftX, rowY + 82);
+          ctx.fillText("cumulé sur la saison", rightX, rowY + 82);
         });
 
         withTextShadow(ctx, 6, () => {
           ctx.fillStyle = "#FFD600";
-          ctx.font = "italic 700 27px Arial, sans-serif";
-          ctx.fillText("Tu penses connaître le score ? Prouve-le.", poster.width / 2, rowY + 148);
+          ctx.font = "italic 700 29px Arial, sans-serif";
+          ctx.fillText("Tu penses connaître le score ? Prouve-le.", poster.width / 2, rowY + 158);
         });
 
         document.body.removeChild(hidden);
