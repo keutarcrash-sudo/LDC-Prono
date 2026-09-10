@@ -522,11 +522,17 @@
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.closePath();
-      ctx.fillStyle = "#0A0F1C";
+      // Blason sur fond blanc (comme un vrai badge d'équipe) plutôt que sur
+      // le fond sombre de l'affiche : beaucoup de crests ont des zones
+      // transparentes qui rendaient mal sur fond marine. Le crest est
+      // affiché en entier ("contain"), légèrement en retrait, pour ne
+      // jamais le rogner.
+      ctx.fillStyle = img ? "#FFFFFF" : "#0A0F1C";
       ctx.fill();
       ctx.clip();
       if (img) {
-        const scale = Math.max((r * 2) / img.width, (r * 2) / img.height);
+        const inset = r * 2 * 0.78;
+        const scale = Math.min(inset / img.width, inset / img.height);
         const w = img.width * scale, h = img.height * scale;
         ctx.drawImage(img, x - w / 2, y - h / 2, w, h);
       } else {
