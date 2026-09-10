@@ -819,8 +819,12 @@
           ctx.fillText(kickoffDay.charAt(0).toUpperCase() + kickoffDay.slice(1), poster.width / 2, centerY + r + 300);
         });
 
-        const bannerTop = centerY + r + 360;
-        const bannerHeight = 230;
+        // Mécanique en 4 étapes (Scanne → Pronostique → Regarde → Récupère
+        // ta récompense) — le même enchaînement repris sur les affiches et
+        // les tables, pas juste une accroche "viens gagner".
+        const bannerTop = centerY + r + 340;
+        const rowSpacing = 72;
+        const bannerHeight = 66 + rowSpacing * 3 + 40;
         ctx.save();
         ctx.fillStyle = "rgba(255,214,0,0.12)";
         ctx.strokeStyle = "rgba(255,214,0,0.65)";
@@ -836,23 +840,28 @@
         }
         ctx.restore();
 
-        await drawIconTitle(ctx, "target", "#FFD600", "VIENS PRONOSTIQUER", "#FFFFFF", "800 42px Arial, sans-serif", poster.width / 2, bannerTop + 78, 46, 16, 6);
         withTextShadow(ctx, 6, () => {
           ctx.fillStyle = "#FFFFFF";
-          ctx.font = "800 34px Arial, sans-serif";
-          ctx.fillText("POUR GAGNER À L'ARENA 18 !", poster.width / 2, bannerTop + 136);
+          ctx.font = "800 40px Arial, sans-serif";
+          ctx.fillText("📱 SCANNE", poster.width / 2, bannerTop + 66);
         });
-        withTextShadow(ctx, 4, () => {
-          ctx.fillStyle = "#D6DCF0";
-          ctx.font = "600 26px Arial, sans-serif";
-          ctx.fillText("🍺 Score exact = boisson offerte", poster.width / 2, bannerTop + 182);
+        await drawIconTitle(ctx, "target", "#FFD600", "PRONOSTIQUE", "#FFFFFF", "800 40px Arial, sans-serif", poster.width / 2, bannerTop + 66 + rowSpacing, 40, 14, 6);
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "800 40px Arial, sans-serif";
+          ctx.fillText("⚽ REGARDE", poster.width / 2, bannerTop + 66 + rowSpacing * 2);
+        });
+        withTextShadow(ctx, 6, () => {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "800 40px Arial, sans-serif";
+          ctx.fillText("🍺 RÉCUPÈRE TA RÉCOMPENSE", poster.width / 2, bannerTop + 66 + rowSpacing * 3);
         });
 
         withTextShadow(ctx, 6, () => {
           ctx.fillStyle = "#FFD600";
           ctx.font = "italic 700 30px Arial, sans-serif";
-          ctx.fillText("Tu penses connaître le score ?", poster.width / 2, bannerTop + bannerHeight + 70);
-          ctx.fillText("Prouve-le.", poster.width / 2, bannerTop + bannerHeight + 112);
+          ctx.fillText("Tu penses connaître le score ?", poster.width / 2, bannerTop + bannerHeight + 52);
+          ctx.fillText("Prouve-le.", poster.width / 2, bannerTop + bannerHeight + 90);
         });
 
         await downloadCanvasPng(poster, `predicto-story-${match.id}.png`);
